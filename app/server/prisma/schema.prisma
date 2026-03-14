@@ -1,0 +1,320 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String   @id @default(uuid()) @db.Uuid
+  username      String   @unique
+  first_name    String
+  last_name     String
+  email         String   @unique
+  password_hash String
+  active        Boolean  @default(true)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  refresh_tokens  RefreshToken[]  @relation("UserRefreshTokens")
+  workspace_users WorkspaceUser[] @relation("UserWorkspaceUsers")
+
+  @@map("users")
+}
+
+model Role {
+  id  String @id @default(uuid()) @db.Uuid
+  key String @unique
+
+  roles_permissions RolePermission[] @relation("RolePermissions")
+  workspace_users   WorkspaceUser[]  @relation("RoleWorkspaceUsers")
+
+  @@map("roles")
+}
+
+model Permission {
+  id     String @id @default(uuid()) @db.Uuid
+  key    String
+  domain String
+
+  roles_permissions RolePermission[] @relation("RolePermissions")
+
+  @@unique([domain, key])
+  @@map("permissions")
+}
+
+model RolePermission {
+  role_id       String @db.Uuid
+  permission_id String @db.Uuid
+
+  role       Role       @relation("RolePermissions", fields: [role_id], references: [id])
+  permission Permission @relation("RolePermissions", fields: [permission_id], references: [id])
+
+  @@id([role_id, permission_id])
+  @@map("roles_permissions")
+}
+
+model Workspace {
+  id         String   @id @default(uuid()) @db.Uuid
+  name       String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  meal_types         MealType[]        @relation("MealTypeWorkspace")
+  dish_types         DishType[]        @relation("DishTypeWorkspace")
+  recipes            Recipe[]          @relation("RecipeWorkspace")
+  ingredients        Ingredient[]      @relation("IngredientWorkspace")
+  ingredient_aliases IngredientAlias[] @relation("IngredientAliasWorkspace")
+  schedules          Schedule[]        @relation("ScheduleWorkspace")
+  workspace_users    WorkspaceUser[]   @relation("WorkspaceWorkspaceUsers")
+
+  @@map("workspaces")
+}
+
+model WorkspaceUser {
+  user_id      String   @db.Uuid
+  workspace_id String   @db.Uuid
+  role_id      String   @db.Uuid
+  created_at   DateTime @default(now())
+
+  user      User      @relation("UserWorkspaceUsers", fields: [user_id], references: [id])
+  workspace Workspace @relation("WorkspaceWorkspaceUsers", fields: [workspace_id], references: [id])
+  role      Role      @relation("RoleWorkspaceUsers", fields: [role_id], references: [id])
+
+  @@id([user_id, workspace_id])
+  @@map("workspace_users")
+}
+
+model MealType {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  workspace_id String   @db.Uuid
+
+  workspace                  Workspace                @relation("MealTypeWorkspace", fields: [workspace_id], references: [id])
+  meal_type_dish_constraints MealTypeDishConstraint[] @relation("MealTypeDishConstraints")
+  recipe_meal_types          RecipeMealType[]         @relation("RecipeMealTypes")
+  schedule_meals             ScheduleMeal[]           @relation("ScheduleMeals")
+  blocked_meals              BlockedMeal[]            @relation("BlockedMeals")
+
+  @@unique([workspace_id, name])
+  @@map("meal_types")
+}
+
+model MealTypeDishConstraint {
+  id           String @id @default(uuid()) @db.Uuid
+  meal_type_id String @db.Uuid
+  dish_type_id String @db.Uuid
+  amount       Int
+
+  meal_type MealType @relation("MealTypeDishConstraints", fields: [meal_type_id], references: [id])
+  dish_type DishType @relation("MealTypeDishConstraints", fields: [dish_type_id], references: [id])
+
+  @@unique([meal_type_id, dish_type_id])
+  @@map("meal_type_dish_constraints")
+}
+
+model DishType {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  workspace_id String   @db.Uuid
+
+  workspace                  Workspace                @relation("DishTypeWorkspace", fields: [workspace_id], references: [id])
+  meal_type_dish_constraints MealTypeDishConstraint[] @relation("MealTypeDishConstraints")
+  recipes                    Recipe[]                 @relation("RecipeDishType")
+  meal_recipes               MealRecipe[]             @relation("MealRecipeDishType")
+
+  @@unique([workspace_id, name])
+  @@map("dish_types")
+}
+
+model Recipe {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String
+  instructions String?
+  dish_type_id String   @db.Uuid
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  workspace_id String   @db.Uuid
+
+  dish_type          DishType           @relation("RecipeDishType", fields: [dish_type_id], references: [id])
+  workspace          Workspace          @relation("RecipeWorkspace", fields: [workspace_id], references: [id])
+  recipe_ingredients RecipeIngredient[] @relation("RecipeIngredients")
+  recipe_meal_types  RecipeMealType[]   @relation("RecipeMealTypes")
+  meal_recipes       MealRecipe[]       @relation("RecipeMealRecipes")
+
+  @@unique([workspace_id, name])
+  @@map("recipes")
+}
+
+model RecipeIngredient {
+  id            String  @id @default(uuid()) @db.Uuid
+  recipe_id     String  @db.Uuid
+  ingredient_id String  @db.Uuid
+  is_main       Boolean @default(false)
+  amount        Float?
+  unit_id       String? @db.Uuid
+
+  recipe     Recipe     @relation("RecipeIngredients", fields: [recipe_id], references: [id])
+  ingredient Ingredient @relation("RecipeIngredients", fields: [ingredient_id], references: [id])
+  unit       Unit?      @relation("RecipeIngredientUnit", fields: [unit_id], references: [id])
+
+  @@unique([recipe_id, ingredient_id])
+  @@map("recipe_ingredients")
+}
+
+model Unit {
+  id   String @id @default(uuid()) @db.Uuid
+  name String @unique
+
+  recipe_ingredients RecipeIngredient[] @relation("RecipeIngredientUnit")
+
+  @@map("units")
+}
+
+model RecipeMealType {
+  recipe_id    String @db.Uuid
+  meal_type_id String @db.Uuid
+
+  recipe    Recipe   @relation("RecipeMealTypes", fields: [recipe_id], references: [id])
+  meal_type MealType @relation("RecipeMealTypes", fields: [meal_type_id], references: [id])
+
+  @@id([recipe_id, meal_type_id])
+  @@map("recipe_meal_types")
+}
+
+model Ingredient {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  workspace_id String   @db.Uuid
+
+  workspace          Workspace          @relation("IngredientWorkspace", fields: [workspace_id], references: [id])
+  recipe_ingredients RecipeIngredient[] @relation("RecipeIngredients")
+  ingredient_aliases IngredientAlias[]  @relation("IngredientAliasIngredient")
+
+  @@unique([workspace_id, name])
+  @@map("ingredients")
+}
+
+model IngredientAlias {
+  id            String @id @default(uuid()) @db.Uuid
+  alias         String
+  ingredient_id String @db.Uuid
+  workspace_id  String @db.Uuid
+
+  ingredient Ingredient @relation("IngredientAliasIngredient", fields: [ingredient_id], references: [id])
+  workspace  Workspace  @relation("IngredientAliasWorkspace", fields: [workspace_id], references: [id])
+
+  @@unique([workspace_id, alias])
+  @@map("ingredient_aliases")
+}
+
+model Schedule {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String
+  start_date   DateTime @db.Date
+  end_date     DateTime @db.Date
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  workspace_id String   @db.Uuid
+
+  workspace           Workspace          @relation("ScheduleWorkspace", fields: [workspace_id], references: [id])
+  schedule_days       ScheduleDay[]      @relation("ScheduleDays")
+  generation_settings GenerationSetting? @relation("GenerationSettings")
+
+  @@unique([workspace_id, name])
+  @@map("schedules")
+}
+
+model ScheduleDay {
+  id          String   @id @default(uuid()) @db.Uuid
+  schedule_id String   @db.Uuid
+  date        DateTime @db.Date
+
+  schedule       Schedule       @relation("ScheduleDays", fields: [schedule_id], references: [id])
+  schedule_meals ScheduleMeal[] @relation("ScheduleMeals")
+
+  @@unique([schedule_id, date])
+  @@map("schedule_days")
+}
+
+model ScheduleMeal {
+  id              String  @id @default(uuid()) @db.Uuid
+  schedule_day_id String  @db.Uuid
+  meal_type_id    String  @db.Uuid
+  is_locked       Boolean @default(false)
+
+  schedule_day ScheduleDay  @relation("ScheduleMeals", fields: [schedule_day_id], references: [id])
+  meal_type    MealType     @relation("ScheduleMeals", fields: [meal_type_id], references: [id])
+  meal_recipes MealRecipe[] @relation("MealRecipes")
+
+  @@unique([schedule_day_id, meal_type_id])
+  @@map("schedule_meals")
+}
+
+model MealRecipe {
+  id               String @id @default(uuid()) @db.Uuid
+  schedule_meal_id String @db.Uuid
+  recipe_id        String @db.Uuid
+  dish_type_id     String @db.Uuid
+
+  schedule_meal ScheduleMeal @relation("MealRecipes", fields: [schedule_meal_id], references: [id])
+  recipe        Recipe       @relation("RecipeMealRecipes", fields: [recipe_id], references: [id])
+  dish_type     DishType     @relation("MealRecipeDishType", fields: [dish_type_id], references: [id])
+
+  @@unique([schedule_meal_id, recipe_id])
+  @@map("meal_recipes")
+}
+
+model GenerationSetting {
+  id                    String  @id @default(uuid()) @db.Uuid
+  schedule_id           String  @unique @db.Uuid
+  recipe_gap            Int
+  main_ing_gap          Int
+  is_allow_same_day_ing Boolean @default(false)
+
+  schedule      Schedule      @relation("GenerationSettings", fields: [schedule_id], references: [id])
+  blocked_meals BlockedMeal[] @relation("BlockedMeals")
+
+  @@map("generation_settings")
+}
+
+model BlockedMeal {
+  id                     String   @id @default(uuid()) @db.Uuid
+  generation_settings_id String   @db.Uuid
+  date                   DateTime @db.Date
+  meal_type_id           String   @db.Uuid
+
+  generation_settings GenerationSetting @relation("BlockedMeals", fields: [generation_settings_id], references: [id])
+  meal_type           MealType          @relation("BlockedMeals", fields: [meal_type_id], references: [id])
+
+  @@unique([generation_settings_id, date, meal_type_id])
+  @@map("blocked_meals")
+}
+
+model RefreshToken {
+  id         String    @id @default(uuid()) @db.Uuid
+  user_id    String    @db.Uuid
+  token_hash String    @unique
+  device     String?
+  ip_address String?
+  expires_at DateTime
+  created_at DateTime  @default(now())
+  revoked_at DateTime?
+
+  user User @relation("UserRefreshTokens", fields: [user_id], references: [id])
+
+  @@map("refresh_tokens")
+}
