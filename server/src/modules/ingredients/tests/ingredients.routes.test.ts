@@ -35,6 +35,7 @@ const ALIAS_ID = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
 const mockIngredient = {
   id: ING_ID,
   name: 'Salt',
+  category: null as string | null,
   workspace_id: 'ws-1',
   created_at: new Date(),
   updated_at: new Date(),
@@ -62,6 +63,7 @@ describe('GET /ingredients', () => {
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().data.items).toHaveLength(1);
+    expect(res.json().data.items[0].category).toBeNull();
   });
 
   it('returns 401 without token', async () => {

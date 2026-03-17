@@ -28,8 +28,16 @@ export const listIngredients = async (
       where,
       skip: (page - 1) * pageSize,
       take: pageSize,
-      orderBy: { name: 'asc' },
-      include: { ingredient_aliases: aliasSelect },
+      orderBy: [{ category: 'asc' }, { name: 'asc' }],
+      select: {
+        id: true,
+        name: true,
+        category: true,
+        workspace_id: true,
+        created_at: true,
+        updated_at: true,
+        ingredient_aliases: aliasSelect,
+      },
     }),
     prisma.ingredient.count({ where }),
   ]);
@@ -64,11 +72,11 @@ export const getAllIngredientNamesAndAliases = async (
 
 export const createIngredient = async (
   prisma: PrismaClient,
-  data: { name: string },
+  data: { name: string; category?: string },
   workspaceId: string,
 ) => {
   return prisma.ingredient.create({
-    data: { name: data.name, workspace_id: workspaceId },
+    data: { name: data.name, category: data.category ?? null, workspace_id: workspaceId },
     include: { ingredient_aliases: aliasSelect },
   });
 };
@@ -77,11 +85,11 @@ export const updateIngredient = async (
   prisma: PrismaClient,
   id: string,
   workspaceId: string,
-  data: { name: string },
+  data: { name: string; category?: string },
 ) => {
   return prisma.ingredient.update({
     where: { id },
-    data: { name: data.name },
+    data: { name: data.name, category: data.category },
     include: { ingredient_aliases: aliasSelect },
   });
 };

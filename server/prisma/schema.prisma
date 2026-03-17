@@ -200,6 +200,7 @@ model RecipeMealType {
 model Ingredient {
   id           String   @id @default(uuid()) @db.Uuid
   name         String
+  category     String?
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
   workspace_id String   @db.Uuid

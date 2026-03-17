@@ -9,13 +9,25 @@ export type ListIngredientsQuery = z.infer<typeof ListIngredientsQuerySchema>
 
 export const CreateIngredientSchema = z.object({
   name: z.string().min(1).max(100),
+  category: z.string().optional(),
 })
 export type CreateIngredientInput = z.infer<typeof CreateIngredientSchema>
 
 export const UpdateIngredientSchema = z.object({
   name: z.string().min(1).max(100),
+  category: z.string().optional(),
 })
 export type UpdateIngredientInput = z.infer<typeof UpdateIngredientSchema>
+
+export type IngredientResponse = {
+  id: string
+  name: string
+  category: string | null
+  workspace_id: string
+  created_at: Date
+  updated_at: Date
+  ingredient_aliases: { id: string; alias: string }[]
+}
 
 export const IngredientParamsSchema = z.object({
   id: z.string().uuid(),

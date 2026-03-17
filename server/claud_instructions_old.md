@@ -95,13 +95,13 @@ The `/api/v1` prefix and each module's base path are registered **once** and nev
 ```ts
 // routes/api.ts
 async function apiRoutes(fastify: FastifyInstance) {
-  fastify.register(ingredientRoutes, { prefix: "/ingredients" });
-  fastify.register(recipeRoutes, { prefix: "/recipes" });
-  fastify.register(dishTypeRoutes, { prefix: "/dish-types" });
-  fastify.register(mealTypeRoutes, { prefix: "/meal-types" });
-  fastify.register(scheduleRoutes, { prefix: "/schedules" });
-  fastify.register(scheduleMealRoutes, { prefix: "/schedule-meals" });
-  fastify.register(authRoutes, { prefix: "/auth" });
+  fastify.register(ingredientRoutes, { prefix: '/ingredients' });
+  fastify.register(recipeRoutes, { prefix: '/recipes' });
+  fastify.register(dishTypeRoutes, { prefix: '/dish-types' });
+  fastify.register(mealTypeRoutes, { prefix: '/meal-types' });
+  fastify.register(scheduleRoutes, { prefix: '/schedules' });
+  fastify.register(scheduleMealRoutes, { prefix: '/schedule-meals' });
+  fastify.register(authRoutes, { prefix: '/auth' });
 }
 
 export default apiRoutes;
@@ -110,7 +110,7 @@ export default apiRoutes;
 Register `api.ts` in the main app with the base prefix:
 
 ```ts
-fastify.register(apiRoutes, { prefix: "/api/v1" });
+fastify.register(apiRoutes, { prefix: '/api/v1' });
 ```
 
 ### Module route files
@@ -159,7 +159,7 @@ fastify.register(healthRoutes); // → GET /health
 
 ```ts
 // plugins/auth.ts
-import { Role } from "../constants/roles";
+import { Role } from '../constants/roles';
 
 type JWTPayload = {
   userId: string;
@@ -167,7 +167,7 @@ type JWTPayload = {
   role: Role;
 };
 
-declare module "@fastify/jwt" {
+declare module '@fastify/jwt' {
   interface FastifyJWT {
     payload: JWTPayload;
     user: JWTPayload;
@@ -188,9 +188,9 @@ Roles are defined as a const object in `constants/roles.ts`:
 ```ts
 // constants/roles.ts
 export const ROLES = {
-  ADMIN: "admin",
-  EDITOR: "editor",
-  VIEWER: "viewer",
+  ADMIN: 'admin',
+  EDITOR: 'editor',
+  VIEWER: 'viewer',
 } as const;
 
 export type Role = (typeof ROLES)[keyof typeof ROLES];
@@ -208,40 +208,40 @@ Permissions are defined as a const object in `constants/permissions.ts`, grouped
 // constants/permissions.ts
 export const PERMISSIONS = {
   INGREDIENTS: {
-    CREATE: { domain: "ingredients", key: "create" },
-    READ: { domain: "ingredients", key: "read" },
-    UPDATE: { domain: "ingredients", key: "update" },
-    DELETE: { domain: "ingredients", key: "delete" },
+    CREATE: { domain: 'ingredients', key: 'create' },
+    READ: { domain: 'ingredients', key: 'read' },
+    UPDATE: { domain: 'ingredients', key: 'update' },
+    DELETE: { domain: 'ingredients', key: 'delete' },
   },
   DISH_TYPES: {
-    CREATE: { domain: "dish-types", key: "create" },
-    READ: { domain: "dish-types", key: "read" },
-    UPDATE: { domain: "dish-types", key: "update" },
-    DELETE: { domain: "dish-types", key: "delete" },
+    CREATE: { domain: 'dish-types', key: 'create' },
+    READ: { domain: 'dish-types', key: 'read' },
+    UPDATE: { domain: 'dish-types', key: 'update' },
+    DELETE: { domain: 'dish-types', key: 'delete' },
   },
   MEAL_TYPES: {
-    CREATE: { domain: "meal-types", key: "create" },
-    READ: { domain: "meal-types", key: "read" },
-    UPDATE: { domain: "meal-types", key: "update" },
-    DELETE: { domain: "meal-types", key: "delete" },
+    CREATE: { domain: 'meal-types', key: 'create' },
+    READ: { domain: 'meal-types', key: 'read' },
+    UPDATE: { domain: 'meal-types', key: 'update' },
+    DELETE: { domain: 'meal-types', key: 'delete' },
   },
   RECIPES: {
-    CREATE: { domain: "recipes", key: "create" },
-    READ: { domain: "recipes", key: "read" },
-    UPDATE: { domain: "recipes", key: "update" },
-    DELETE: { domain: "recipes", key: "delete" },
+    CREATE: { domain: 'recipes', key: 'create' },
+    READ: { domain: 'recipes', key: 'read' },
+    UPDATE: { domain: 'recipes', key: 'update' },
+    DELETE: { domain: 'recipes', key: 'delete' },
   },
   SCHEDULES: {
-    CREATE: { domain: "schedules", key: "create" },
-    READ: { domain: "schedules", key: "read" },
-    UPDATE: { domain: "schedules", key: "update" },
-    DELETE: { domain: "schedules", key: "delete" },
+    CREATE: { domain: 'schedules', key: 'create' },
+    READ: { domain: 'schedules', key: 'read' },
+    UPDATE: { domain: 'schedules', key: 'update' },
+    DELETE: { domain: 'schedules', key: 'delete' },
   },
   SCHEDULE_MEALS: {
-    CREATE: { domain: "schedule-meals", key: "create" },
-    READ: { domain: "schedule-meals", key: "read" },
-    UPDATE: { domain: "schedule-meals", key: "update" },
-    DELETE: { domain: "schedule-meals", key: "delete" },
+    CREATE: { domain: 'schedule-meals', key: 'create' },
+    READ: { domain: 'schedule-meals', key: 'read' },
+    UPDATE: { domain: 'schedule-meals', key: 'update' },
+    DELETE: { domain: 'schedule-meals', key: 'delete' },
   },
 } as const;
 ```
@@ -254,14 +254,14 @@ Always import from `constants/index.ts` — never hardcode domain or key strings
 
 ```ts
 // plugins/auth.ts (relevant excerpt)
-import { forbiddenError } from '../utils/errors'
+import { forbiddenError } from '../utils/errors';
 
-type Permission = { domain: string; key: string }
+type Permission = { domain: string; key: string };
 
 declare module 'fastify' {
   interface FastifyInstance {
-    authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
-    requirePermission: (permission: Permission) => (request: FastifyRequest) => Promise<void>
+    authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+    requirePermission: (permission: Permission) => (request: FastifyRequest) => Promise<void>;
   }
 }
 
@@ -277,10 +277,10 @@ fastify.decorate(
           some: { role: { key: request.user.role } },
         },
       },
-    })
-    if (!found) throw forbiddenError()
-  }
-)
+    });
+    if (!found) throw forbiddenError();
+  },
+);
 ```
 
 **MVP note:** One DB call per protected request. Acceptable for MVP.
@@ -291,30 +291,24 @@ fastify.decorate(
 Always use `fastify.authenticate` and `fastify.requirePermission` as preHandlers. Never import `requirePermission` as a standalone function — it lives on the `fastify` instance.
 
 ```ts
-import { PERMISSIONS } from "../../constants";
+import { PERMISSIONS } from '../../constants';
 
 // JWT auth only (read endpoints)
-fastify.get("/", { preHandler: [fastify.authenticate] }, handler);
+fastify.get('/', { preHandler: [fastify.authenticate] }, handler);
 
 // JWT auth + permission check (write endpoints)
 fastify.post(
-  "/",
+  '/',
   {
-    preHandler: [
-      fastify.authenticate,
-      fastify.requirePermission(PERMISSIONS.RECIPES.CREATE),
-    ],
+    preHandler: [fastify.authenticate, fastify.requirePermission(PERMISSIONS.RECIPES.CREATE)],
   },
   handler,
 );
 
 fastify.delete(
-  "/:id",
+  '/:id',
   {
-    preHandler: [
-      fastify.authenticate,
-      fastify.requirePermission(PERMISSIONS.RECIPES.DELETE),
-    ],
+    preHandler: [fastify.authenticate, fastify.requirePermission(PERMISSIONS.RECIPES.DELETE)],
   },
   handler,
 );
@@ -354,7 +348,7 @@ packages/types/
 
 ```ts
 // packages/types/ingredients.ts
-import { z } from "zod";
+import { z } from 'zod';
 
 export const CreateIngredientSchema = z.object({
   name: z.string().min(1),
@@ -370,10 +364,7 @@ export type IngredientParams = z.infer<typeof IngredientParamsSchema>;
 ### Importing in the server
 
 ```ts
-import {
-  CreateIngredientSchema,
-  CreateIngredientInput,
-} from "@app/types/ingredients";
+import { CreateIngredientSchema, CreateIngredientInput } from '@app/types/ingredients';
 ```
 
 ### Response types
@@ -443,7 +434,7 @@ return { data: { id } };
 All constants are barrel-exported from `constants/index.ts`. Always import from the index, never from individual files:
 
 ```ts
-import { ERROR_CODES, ERROR_MESSAGES, HTTP_STATUS, ROLES, PERMISSIONS } from '../../constants'
+import { ERROR_CODES, ERROR_MESSAGES, HTTP_STATUS, ROLES, PERMISSIONS } from '../../constants';
 ```
 
 ---
@@ -461,7 +452,7 @@ import {
   ruleViolationError,
   invalidRequestError,
   internalError,
-} from "../../utils/errors";
+} from '../../utils/errors';
 
 throw notFoundError();
 throw conflictError();
@@ -486,12 +477,12 @@ if (!ingredient) throw notFoundError();
 Catch in the service layer and rethrow as 409:
 
 ```ts
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 try {
   return await createIngredient(prisma, data, workspaceId);
 } catch (error) {
-  if (error instanceof PrismaClientKnownRequestError && error.code === "P2002") {
+  if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
     throw conflictError();
   }
   throw error;
@@ -514,15 +505,15 @@ Prisma is registered as a Fastify plugin in `plugins/prisma.ts` and decorated on
 
 ```ts
 // plugins/prisma.ts
-import { PrismaClient } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
 });
 ```
 
-This applies everywhere `PrismaClient` is instantiated, including repository tests (use `DATABASE_TEST_URL` there).
+This applies everywhere `PrismaClient` is instantiated, including repository tests (use `DATABASE_URL` there).
 
 ### Repositories
 
@@ -530,23 +521,16 @@ Repositories receive `prisma` as their first parameter:
 
 ```ts
 // modules/ingredients/ingredients.repository.ts
-import { PrismaClient } from "@prisma/client";
-import { CreateIngredientInput } from "@app/types/ingredients";
+import { PrismaClient } from '@prisma/client';
+import { CreateIngredientInput } from '@app/types/ingredients';
 
-export const getIngredientById = async (
-  prisma: PrismaClient,
-  id: string,
-  workspaceId: string,
-) => {
+export const getIngredientById = async (prisma: PrismaClient, id: string, workspaceId: string) => {
   return prisma.ingredient.findFirst({
     where: { id, workspace_id: workspaceId },
   });
 };
 
-export const getAllIngredients = async (
-  prisma: PrismaClient,
-  workspaceId: string,
-) => {
+export const getAllIngredients = async (prisma: PrismaClient, workspaceId: string) => {
   return prisma.ingredient.findMany({
     where: { workspace_id: workspaceId },
   });
@@ -569,8 +553,8 @@ Services receive `prisma` as their first parameter and pass it to repositories:
 
 ```ts
 // modules/ingredients/ingredients.service.ts
-import { PrismaClient } from "@prisma/client";
-import { notFoundError } from "../../utils/errors";
+import { PrismaClient } from '@prisma/client';
+import { notFoundError } from '../../utils/errors';
 
 export const fetchIngredientById = async (
   prisma: PrismaClient,
@@ -589,23 +573,15 @@ Routes access `fastify.prisma` and pass it into services:
 
 ```ts
 // modules/ingredients/ingredients.routes.ts
-import { FastifyInstance } from "fastify";
+import { FastifyInstance } from 'fastify';
 
 async function ingredientRoutes(fastify: FastifyInstance) {
-  fastify.get(
-    "/:id",
-    { preHandler: [fastify.authenticate] },
-    async (request, reply) => {
-      const { workspaceId } = request.user;
-      const params = IngredientParamsSchema.parse(request.params);
-      const result = await fetchIngredientById(
-        fastify.prisma,
-        params.id,
-        workspaceId,
-      );
-      return { data: result };
-    },
-  );
+  fastify.get('/:id', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+    const { workspaceId } = request.user;
+    const params = IngredientParamsSchema.parse(request.params);
+    const result = await fetchIngredientById(fastify.prisma, params.id, workspaceId);
+    return { data: result };
+  });
 }
 
 export default ingredientRoutes;
@@ -681,28 +657,28 @@ Key models and their workspace-scoped fields:
 - Register both `prismaPlugin` and `authPlugin` — `authPlugin` needs `fastify.prisma` for `requirePermission`
 
 ```ts
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import Fastify from "fastify";
-import prismaPlugin from "../../../plugins/prisma";
-import authPlugin from "../../../plugins/auth";
-import ingredientRoutes from "../ingredients.routes";
-import * as service from "../ingredients.service";
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import Fastify from 'fastify';
+import prismaPlugin from '../../../plugins/prisma';
+import authPlugin from '../../../plugins/auth';
+import ingredientRoutes from '../ingredients.routes';
+import * as service from '../ingredients.service';
 
-vi.mock("../ingredients.service");
+vi.mock('../ingredients.service');
 
 const buildApp = async () => {
   const app = Fastify();
   await app.register(prismaPlugin);
   await app.register(authPlugin);
-  await app.register(ingredientRoutes, { prefix: "/ingredients" });
+  await app.register(ingredientRoutes, { prefix: '/ingredients' });
   await app.ready();
   return app;
 };
 
 const signToken = (app: ReturnType<typeof Fastify>) =>
-  app.jwt.sign({ userId: "user-1", workspaceId: "ws-1", role: "admin" });
+  app.jwt.sign({ userId: 'user-1', workspaceId: 'ws-1', role: 'admin' });
 
-describe("GET /ingredients/:id", () => {
+describe('GET /ingredients/:id', () => {
   let app: Awaited<ReturnType<typeof buildApp>>;
 
   beforeEach(async () => {
@@ -712,25 +688,25 @@ describe("GET /ingredients/:id", () => {
     await app.close();
   });
 
-  it("returns 200 with data", async () => {
+  it('returns 200 with data', async () => {
     vi.mocked(service.fetchIngredientById).mockResolvedValue({
-      id: "1",
-      name: "Salt",
-      workspace_id: "ws-1",
+      id: '1',
+      name: 'Salt',
+      workspace_id: 'ws-1',
     });
     const res = await app.inject({
-      method: "GET",
-      url: "/ingredients/1",
+      method: 'GET',
+      url: '/ingredients/1',
       headers: { authorization: `Bearer ${signToken(app)}` },
     });
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({
-      data: { id: "1", name: "Salt", workspace_id: "ws-1" },
+      data: { id: '1', name: 'Salt', workspace_id: 'ws-1' },
     });
   });
 
-  it("returns 401 without token", async () => {
-    const res = await app.inject({ method: "GET", url: "/ingredients/1" });
+  it('returns 401 without token', async () => {
+    const res = await app.inject({ method: 'GET', url: '/ingredients/1' });
     expect(res.statusCode).toBe(401);
   });
 });
@@ -745,26 +721,26 @@ describe("GET /ingredients/:id", () => {
 - Test: business logic, error throwing, edge cases
 
 ```ts
-import { describe, it, expect, vi } from "vitest";
-import { fetchIngredientById } from "../ingredients.service";
-import * as repo from "../ingredients.repository";
+import { describe, it, expect, vi } from 'vitest';
+import { fetchIngredientById } from '../ingredients.service';
+import * as repo from '../ingredients.repository';
 
-vi.mock("../ingredients.repository");
+vi.mock('../ingredients.repository');
 
-describe("fetchIngredientById", () => {
-  it("returns ingredient when found", async () => {
+describe('fetchIngredientById', () => {
+  it('returns ingredient when found', async () => {
     vi.mocked(repo.getIngredientById).mockResolvedValue({
-      id: "1",
-      name: "Salt",
-      workspace_id: "ws-1",
+      id: '1',
+      name: 'Salt',
+      workspace_id: 'ws-1',
     });
-    const result = await fetchIngredientById({} as any, "1", "ws-1");
-    expect(result.name).toBe("Salt");
+    const result = await fetchIngredientById({} as any, '1', 'ws-1');
+    expect(result.name).toBe('Salt');
   });
 
-  it("throws 404 when not found", async () => {
+  it('throws 404 when not found', async () => {
     vi.mocked(repo.getIngredientById).mockResolvedValue(null);
-    await expect(fetchIngredientById({} as any, "1", "ws-1")).rejects.toThrow();
+    await expect(fetchIngredientById({} as any, '1', 'ws-1')).rejects.toThrow();
   });
 });
 ```
@@ -773,69 +749,69 @@ describe("fetchIngredientById", () => {
 
 ### Test DB setup (one-time, do this before writing repository tests)
 
-1. Create a separate Postgres database for tests, e.g. `mealplanner_test`
-2. Add `DATABASE_TEST_URL` to `.env.test` in `app/server/` — never commit this file:
+1. Create a separate Postgres database for tests, e.g. `meal_planner_test`
+2. Add `DATABASE_URL` to `.env.test` in `app/server/` — never commit this file:
 
 ```
-DATABASE_TEST_URL="postgresql://user@localhost:5432/mealplanner_test"
+DATABASE_URL="postgresql://user@localhost:5432/meal_planner_test"
 ```
 
 3. Add `.env.test` to `.gitignore`
 4. Run migrations against the test DB once:
 
 ```bash
-DATABASE_URL=postgresql://user@localhost:5432/mealplanner_test npx prisma migrate deploy
+DATABASE_URL=postgresql://user@localhost:5432/meal_planner_test npx prisma migrate deploy
 ```
 
 5. Configure Vitest to load `.env.test` in `vitest.config.ts`:
 
 ```ts
-import { defineConfig } from "vitest/config";
-import dotenv from "dotenv";
+import { defineConfig } from 'vitest/config';
+import dotenv from 'dotenv';
 
-dotenv.config({ path: ".env.test" });
+dotenv.config({ path: '.env.test' });
 
 export default defineConfig({
   test: {
-    environment: "node",
+    environment: 'node',
   },
 });
 ```
 
 ### Repository tests (`<module>.repository.test.ts`)
 
-- Use a real PostgreSQL test database (`DATABASE_TEST_URL` in `.env.test`)
+- Use a real PostgreSQL test database (`DATABASE_URL` in `.env.test`)
 - Truncate relevant tables in `beforeEach` to keep tests isolated — each test starts with a clean slate
 - Test: correct Prisma queries, workspace scoping, unique constraint behaviour
 
 ```ts
-import { describe, it, expect, beforeEach } from "vitest";
-import { PrismaClient } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { getIngredientById, createIngredient } from "../ingredients.repository";
+import { describe, it, expect, beforeEach } from 'vitest';
+import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { getIngredientById, createIngredient } from '../ingredients.repository';
 
 const prisma = new PrismaClient({
-  adapter: new PrismaPg({ connectionString: process.env.DATABASE_TEST_URL }),
+  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
 });
 
 beforeEach(async () => {
   await prisma.ingredient.deleteMany();
 });
 
-describe("getIngredientById", () => {
-  it("returns ingredient scoped to workspace", async () => {
+describe('getIngredientById', () => {
+  it('returns ingredient scoped to workspace', async () => {
     const created = await prisma.ingredient.create({
-      data: { name: "Salt", workspace_id: "ws-1" },
+      data: { name: 'Salt', workspace_id: 'ws-1' },
     });
-    const result = await getIngredientById(prisma, created.id, "ws-1");
-    expect(result?.name).toBe("Salt");
+    const result = await getIngredientById(prisma, created.id, 'ws-1');
+    expect(result?.name).toBe('Salt');
   });
 
-  it("does not return ingredient from different workspace", async () => {
+  it('does not return ingredient from different workspace', async () => {
     const created = await prisma.ingredient.create({
-      data: { name: "Salt", workspace_id: "ws-1" },
+      data: { name: 'Salt', workspace_id: 'ws-1' },
     });
-    const result = await getIngredientById(prisma, created.id, "ws-2");
+    const result = await getIngredientById(prisma, created.id, 'ws-2');
     expect(result).toBeNull();
   });
 });

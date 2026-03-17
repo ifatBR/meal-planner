@@ -19,6 +19,7 @@ const mockPrisma = {} as any;
 const mockIngredient = {
   id: 'ing-1',
   name: 'Salt',
+  category: null as string | null,
   workspace_id: 'ws-1',
   created_at: new Date(),
   updated_at: new Date(),

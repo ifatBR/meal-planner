@@ -13,6 +13,8 @@
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
+    "db:migrate_test": "dotenv -e .env.test -- npx prisma migrate deploy",
+    "db:seed_test": "dotenv -e .env.test -- tsx prisma/seed.ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\""
   },

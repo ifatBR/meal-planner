@@ -13,7 +13,7 @@ import {
 } from '../ingredients.repository';
 
 const prisma = new PrismaClient({
-  adapter: new PrismaPg({ connectionString: process.env.DATABASE_TEST_URL! }),
+  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }),
 });
 
 const WS_ID = '00000000-0000-0000-0000-000000000001';
@@ -38,10 +38,16 @@ afterAll(async () => {
 
 describe('createIngredient', () => {
   it('creates and returns ingredient with empty aliases', async () => {
-    const result = await createIngredient(prisma, { name: 'Salt' }, WS_ID);
+    const result = await createIngredient(prisma, { name: 'Salt', category: 'spices' }, WS_ID);
     expect(result.name).toBe('Salt');
+    expect(result.category).toBe('spices');
     expect(result.workspace_id).toBe(WS_ID);
     expect(result.ingredient_aliases).toEqual([]);
+  });
+
+  it('stores null category when not provided', async () => {
+    const result = await createIngredient(prisma, { name: 'Salt' }, WS_ID);
+    expect(result.category).toBeNull();
   });
 });
 

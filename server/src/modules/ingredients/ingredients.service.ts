@@ -161,13 +161,16 @@ export const removeAlias = async (
 export const seedWorkspaceIngredients = async (prisma: PrismaClient, workspaceId: string) => {
   const filePath = path.resolve(__dirname, '../../../prisma/global-ingredients.json');
   const raw = fs.readFileSync(filePath, 'utf-8');
-  const globalIngredients: Array<{ name: string; aliases: string[] }> = JSON.parse(raw);
+  const globalIngredients: Array<{ name: string; category?: string; aliases: string[] }> =
+    JSON.parse(raw);
 
   for (const item of globalIngredients) {
     try {
-      const ingredient = await prisma.ingredient.create({
-        data: { name: item.name, workspace_id: workspaceId },
-      });
+      const ingredient = await createIngredientRepo(
+        prisma,
+        { name: item.name, category: item.category },
+        workspaceId,
+      );
       if (item.aliases.length > 0) {
         await prisma.ingredientAlias.createMany({
           data: item.aliases.map((alias) => ({

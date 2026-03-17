@@ -11,7 +11,7 @@ import {
 } from '../auth.repository';
 
 const prisma = new PrismaClient({
-  adapter: new PrismaPg({ connectionString: process.env.DATABASE_TEST_URL }),
+  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
 });
 
 beforeEach(async () => {

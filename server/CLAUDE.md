@@ -68,8 +68,7 @@ app/server/src/
     ├── errorMessages.ts
     ├── httpStatus.ts
     ├── permissions.ts
-    ├── ai.ts                       ← AI_PROVIDER constant
-    └── system.ts                   ← SYSTEM_WORKSPACE_ID
+    └── ai.ts                       ← AI_PROVIDER constant
 ```
 
 ---
@@ -104,13 +103,13 @@ The `/api/v1` prefix and each module's base path are registered **once** and nev
 ```ts
 // routes/api.ts
 async function apiRoutes(fastify: FastifyInstance) {
-  fastify.register(ingredientRoutes, { prefix: "/ingredients" });
-  fastify.register(recipeRoutes, { prefix: "/recipes" });
-  fastify.register(dishTypeRoutes, { prefix: "/dish-types" });
-  fastify.register(mealTypeRoutes, { prefix: "/meal-types" });
-  fastify.register(scheduleRoutes, { prefix: "/schedules" });
-  fastify.register(scheduleMealRoutes, { prefix: "/schedule-meals" });
-  fastify.register(authRoutes, { prefix: "/auth" });
+  fastify.register(ingredientRoutes, { prefix: '/ingredients' });
+  fastify.register(recipeRoutes, { prefix: '/recipes' });
+  fastify.register(dishTypeRoutes, { prefix: '/dish-types' });
+  fastify.register(mealTypeRoutes, { prefix: '/meal-types' });
+  fastify.register(scheduleRoutes, { prefix: '/schedules' });
+  fastify.register(scheduleMealRoutes, { prefix: '/schedule-meals' });
+  fastify.register(authRoutes, { prefix: '/auth' });
 }
 
 export default apiRoutes;
@@ -119,7 +118,7 @@ export default apiRoutes;
 Register `api.ts` in the main app with the base prefix:
 
 ```ts
-fastify.register(apiRoutes, { prefix: "/api/v1" });
+fastify.register(apiRoutes, { prefix: '/api/v1' });
 ```
 
 ### Module route files
@@ -168,7 +167,7 @@ fastify.register(healthRoutes); // → GET /health
 
 ```ts
 // plugins/auth.ts
-import { Role } from "@app/types/roles";
+import { Role } from '@app/types/roles';
 
 type JWTPayload = {
   userId: string;
@@ -176,7 +175,7 @@ type JWTPayload = {
   role: Role;
 };
 
-declare module "@fastify/jwt" {
+declare module '@fastify/jwt' {
   interface FastifyJWT {
     payload: JWTPayload;
     user: JWTPayload;
@@ -195,7 +194,7 @@ const { userId, workspaceId, role } = request.user;
 `ROLES` and `Role` are defined in the shared types package and imported directly from there everywhere — including server code, seed files, and plugins. There is no `constants/roles.ts`.
 
 ```ts
-import { ROLES, type Role } from "@app/types/roles";
+import { ROLES, type Role } from '@app/types/roles';
 ```
 
 Three roles: `admin`, `editor`, `viewer`.
@@ -210,46 +209,46 @@ Permissions are defined as a const object in `constants/permissions.ts`, grouped
 // constants/permissions.ts
 export const PERMISSIONS = {
   INGREDIENTS: {
-    CREATE: { domain: "ingredients", key: "create" },
-    UPDATE: { domain: "ingredients", key: "update" },
-    DELETE: { domain: "ingredients", key: "delete" },
+    CREATE: { domain: 'ingredients', key: 'create' },
+    UPDATE: { domain: 'ingredients', key: 'update' },
+    DELETE: { domain: 'ingredients', key: 'delete' },
   },
   DISH_TYPES: {
-    CREATE: { domain: "dish-types", key: "create" },
-    UPDATE: { domain: "dish-types", key: "update" },
-    DELETE: { domain: "dish-types", key: "delete" },
+    CREATE: { domain: 'dish-types', key: 'create' },
+    UPDATE: { domain: 'dish-types', key: 'update' },
+    DELETE: { domain: 'dish-types', key: 'delete' },
   },
   MEAL_TYPES: {
-    CREATE: { domain: "meal-types", key: "create" },
-    UPDATE: { domain: "meal-types", key: "update" },
-    DELETE: { domain: "meal-types", key: "delete" },
+    CREATE: { domain: 'meal-types', key: 'create' },
+    UPDATE: { domain: 'meal-types', key: 'update' },
+    DELETE: { domain: 'meal-types', key: 'delete' },
   },
   RECIPES: {
-    CREATE: { domain: "recipes", key: "create" },
-    UPDATE: { domain: "recipes", key: "update" },
-    DELETE: { domain: "recipes", key: "delete" },
+    CREATE: { domain: 'recipes', key: 'create' },
+    UPDATE: { domain: 'recipes', key: 'update' },
+    DELETE: { domain: 'recipes', key: 'delete' },
   },
   SCHEDULES: {
-    CREATE: { domain: "schedules", key: "create" },
-    UPDATE: { domain: "schedules", key: "update" },
-    DELETE: { domain: "schedules", key: "delete" },
+    CREATE: { domain: 'schedules', key: 'create' },
+    UPDATE: { domain: 'schedules', key: 'update' },
+    DELETE: { domain: 'schedules', key: 'delete' },
   },
   SCHEDULE_MEALS: {
-    CREATE: { domain: "schedule-meals", key: "create" },
-    UPDATE: { domain: "schedule-meals", key: "update" },
-    DELETE: { domain: "schedule-meals", key: "delete" },
+    CREATE: { domain: 'schedule-meals', key: 'create' },
+    UPDATE: { domain: 'schedule-meals', key: 'update' },
+    DELETE: { domain: 'schedule-meals', key: 'delete' },
   },
   USERS: {
-    READ:   { domain: "users", key: "read" },
-    CREATE: { domain: "users", key: "create" },
-    UPDATE: { domain: "users", key: "update" },
-    DELETE: { domain: "users", key: "delete" },
+    READ: { domain: 'users', key: 'read' },
+    CREATE: { domain: 'users', key: 'create' },
+    UPDATE: { domain: 'users', key: 'update' },
+    DELETE: { domain: 'users', key: 'delete' },
   },
   PERMISSIONS: {
-    READ:   { domain: "permissions", key: "read" },
-    CREATE: { domain: "permissions", key: "create" },
-    UPDATE: { domain: "permissions", key: "update" },
-    DELETE: { domain: "permissions", key: "delete" },
+    READ: { domain: 'permissions', key: 'read' },
+    CREATE: { domain: 'permissions', key: 'create' },
+    UPDATE: { domain: 'permissions', key: 'update' },
+    DELETE: { domain: 'permissions', key: 'delete' },
   },
 } as const;
 ```
@@ -264,14 +263,14 @@ Always import from `constants/index.ts` — never hardcode domain or key strings
 
 ```ts
 // plugins/auth.ts (relevant excerpt)
-import { forbiddenError } from '../utils/errors'
+import { forbiddenError } from '../utils/errors';
 
-type Permission = { domain: string; key: string }
+type Permission = { domain: string; key: string };
 
 declare module 'fastify' {
   interface FastifyInstance {
-    authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
-    requirePermission: (permission: Permission) => (request: FastifyRequest) => Promise<void>
+    authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+    requirePermission: (permission: Permission) => (request: FastifyRequest) => Promise<void>;
   }
 }
 
@@ -287,10 +286,10 @@ fastify.decorate(
           some: { role: { key: request.user.role } },
         },
       },
-    })
-    if (!found) throw forbiddenError()
-  }
-)
+    });
+    if (!found) throw forbiddenError();
+  },
+);
 ```
 
 **MVP note:** One DB call per protected request. Acceptable for MVP.
@@ -301,30 +300,24 @@ fastify.decorate(
 Always use `fastify.authenticate` and `fastify.requirePermission` as preHandlers. Never import `requirePermission` as a standalone function — it lives on the `fastify` instance.
 
 ```ts
-import { PERMISSIONS } from "../../constants";
+import { PERMISSIONS } from '../../constants';
 
 // JWT auth only (read endpoints on workspace data modules)
-fastify.get("/", { preHandler: [fastify.authenticate] }, handler);
+fastify.get('/', { preHandler: [fastify.authenticate] }, handler);
 
 // JWT auth + permission check (write endpoints)
 fastify.post(
-  "/",
+  '/',
   {
-    preHandler: [
-      fastify.authenticate,
-      fastify.requirePermission(PERMISSIONS.RECIPES.CREATE),
-    ],
+    preHandler: [fastify.authenticate, fastify.requirePermission(PERMISSIONS.RECIPES.CREATE)],
   },
   handler,
 );
 
 fastify.delete(
-  "/:id",
+  '/:id',
   {
-    preHandler: [
-      fastify.authenticate,
-      fastify.requirePermission(PERMISSIONS.RECIPES.DELETE),
-    ],
+    preHandler: [fastify.authenticate, fastify.requirePermission(PERMISSIONS.RECIPES.DELETE)],
   },
   handler,
 );
@@ -339,21 +332,6 @@ Always use `PERMISSIONS` constants — never pass raw domain/key strings to `req
 **Every single DB query must be scoped by `workspace_id`.**
 Always read `workspaceId` from `request.user.workspaceId` and pass it to the repository.
 Never trust a `workspaceId` from the request body or params — always use the one from the JWT.
-
----
-
-## System Workspace
-
-A special system workspace exists for storing global reference data (e.g. the global ingredient dictionary). Its ID is fixed and defined in `constants/system.ts`:
-
-```ts
-// constants/system.ts
-export const SYSTEM_WORKSPACE_ID = '<your-uuid-here>'
-```
-
-Never hardcode this value anywhere else — always import from `constants/system.ts`.
-
-The system workspace is never returned in any user-facing query. Always exclude it by scoping queries to `request.user.workspaceId`.
 
 ---
 
@@ -374,34 +352,34 @@ app/server/src/lib/ai/
 ### types.ts
 
 ```ts
-export type AIProvider = 'anthropic' | 'openai'
+export type AIProvider = 'anthropic' | 'openai';
 
 export interface AIClient {
   matchIngredient(
     name: string,
-    candidates: string[]
-  ): Promise<{ match: string | null; confidence: 'high' | 'low' }>
+    candidates: string[],
+  ): Promise<{ match: string | null; confidence: 'high' | 'low' }>;
 }
 ```
 
 ### constants/ai.ts
 
 ```ts
-import { AIProvider } from '../lib/ai/types'
+import type { AIProvider } from '../lib/ai/types';
 
-export const AI_PROVIDER: AIProvider = 'openai' // change to 'anthropic' to switch
+export const AI_PROVIDER: AIProvider = 'openai'; // change to 'anthropic' to switch
 ```
 
 ### lib/ai/index.ts
 
 ```ts
-import { AI_PROVIDER } from '../../constants'
-import { AIClient } from './types'
-import { OpenAIClient } from './openai'
-import { AnthropicClient } from './anthropic'
+import { AI_PROVIDER } from '../../constants';
+import { AIClient } from './types';
+import { OpenAIClient } from './openai';
+import { AnthropicClient } from './anthropic';
 
 export const aiClient: AIClient =
-  AI_PROVIDER === 'openai' ? new OpenAIClient() : new AnthropicClient()
+  AI_PROVIDER === 'openai' ? new OpenAIClient() : new AnthropicClient();
 ```
 
 ### Switching providers
@@ -409,6 +387,7 @@ export const aiClient: AIClient =
 Change `AI_PROVIDER` in `constants/ai.ts` — nothing else needs to change. Both implementations are always present.
 
 Each implementation reads its API key from env:
+
 - OpenAI: `process.env.OPENAI_API_KEY`
 - Anthropic: `process.env.ANTHROPIC_API_KEY`
 
@@ -432,16 +411,19 @@ export const seedWorkspaceIngredients = async (
 The auth service calls this after creating the workspace and workspace user:
 
 ```ts
-await seedWorkspaceIngredients(prisma, workspace.id)
+await seedWorkspaceIngredients(prisma, workspace.id);
 ```
 
 `prisma/global-ingredients.json` has the shape:
+
 ```json
 [
-  { "name": "eggplant", "aliases": ["aubergine", "brinjal"] },
-  { "name": "cilantro", "aliases": ["coriander", "dhania"] }
+  { "name": "eggplant", "category": "vegetables", "aliases": ["aubergine", "brinjal"] },
+  { "name": "cilantro", "category": "herbs", "aliases": ["coriander", "dhania"] }
 ]
 ```
+
+Each workspace owns its ingredients fully — they are copied from the global list on creation and can be edited or deleted freely. There is no shared global ingredient table at runtime.
 
 ---
 
@@ -469,7 +451,7 @@ packages/types/
 
 ```ts
 // packages/types/ingredients.ts
-import { z } from "zod";
+import { z } from 'zod';
 
 export const CreateIngredientSchema = z.object({
   name: z.string().min(1).max(50),
@@ -490,10 +472,7 @@ export type IngredientParams = z.infer<typeof IngredientParamsSchema>;
 ### Importing in the server
 
 ```ts
-import {
-  CreateIngredientSchema,
-  CreateIngredientInput,
-} from "@app/types/ingredients";
+import { CreateIngredientSchema, CreateIngredientInput } from '@app/types/ingredients';
 ```
 
 ### Response types
@@ -543,7 +522,13 @@ return { data: { id } };
 All constants are barrel-exported from `constants/index.ts`. Always import from the index, never from individual files:
 
 ```ts
-import { ERROR_CODES, ERROR_MESSAGES, HTTP_STATUS, PERMISSIONS, SYSTEM_WORKSPACE_ID, AI_PROVIDER } from '../../constants'
+import {
+  ERROR_CODES,
+  ERROR_MESSAGES,
+  HTTP_STATUS,
+  PERMISSIONS,
+  AI_PROVIDER,
+} from '../../constants';
 ```
 
 Note: `ROLES` and `Role` are NOT in constants — import them from `@app/types/roles` directly.
@@ -563,7 +548,7 @@ import {
   ruleViolationError,
   invalidRequestError,
   internalError,
-} from "../../utils/errors";
+} from '../../utils/errors';
 
 throw notFoundError();
 throw conflictError();
@@ -588,12 +573,12 @@ if (!ingredient) throw notFoundError();
 Catch in the service layer and rethrow as 409:
 
 ```ts
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 try {
   return await createIngredient(prisma, data, workspaceId);
 } catch (error) {
-  if (error instanceof PrismaClientKnownRequestError && error.code === "P2002") {
+  if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
     throw conflictError();
   }
   throw error;
@@ -616,15 +601,15 @@ Prisma is registered as a Fastify plugin in `plugins/prisma.ts` and decorated on
 
 ```ts
 // plugins/prisma.ts
-import { PrismaClient } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
 });
 ```
 
-This applies everywhere `PrismaClient` is instantiated, including repository tests (use `DATABASE_TEST_URL` there).
+This applies everywhere `PrismaClient` is instantiated, including repository tests (use `DATABASE_URL` there).
 
 ### Repositories
 
@@ -632,14 +617,10 @@ Repositories receive `prisma` as their first parameter:
 
 ```ts
 // modules/ingredients/ingredients.repository.ts
-import { PrismaClient } from "@prisma/client";
-import { CreateIngredientInput } from "@app/types/ingredients";
+import { PrismaClient } from '@prisma/client';
+import { CreateIngredientInput } from '@app/types/ingredients';
 
-export const getIngredientById = async (
-  prisma: PrismaClient,
-  id: string,
-  workspaceId: string,
-) => {
+export const getIngredientById = async (prisma: PrismaClient, id: string, workspaceId: string) => {
   return prisma.ingredient.findFirst({
     where: { id, workspace_id: workspaceId },
   });
@@ -652,8 +633,8 @@ Services receive `prisma` as their first parameter and pass it to repositories:
 
 ```ts
 // modules/ingredients/ingredients.service.ts
-import { PrismaClient } from "@prisma/client";
-import { notFoundError } from "../../utils/errors";
+import { PrismaClient } from '@prisma/client';
+import { notFoundError } from '../../utils/errors';
 
 export const fetchIngredientById = async (
   prisma: PrismaClient,
@@ -672,23 +653,15 @@ Routes access `fastify.prisma` and pass it into services:
 
 ```ts
 // modules/ingredients/ingredients.routes.ts
-import { FastifyInstance } from "fastify";
+import { FastifyInstance } from 'fastify';
 
 async function ingredientRoutes(fastify: FastifyInstance) {
-  fastify.get(
-    "/:id",
-    { preHandler: [fastify.authenticate] },
-    async (request, reply) => {
-      const { workspaceId } = request.user;
-      const params = IngredientParamsSchema.parse(request.params);
-      const result = await fetchIngredientById(
-        fastify.prisma,
-        params.id,
-        workspaceId,
-      );
-      return { data: result };
-    },
-  );
+  fastify.get('/:id', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+    const { workspaceId } = request.user;
+    const params = IngredientParamsSchema.parse(request.params);
+    const result = await fetchIngredientById(fastify.prisma, params.id, workspaceId);
+    return { data: result };
+  });
 }
 
 export default ingredientRoutes;
@@ -733,18 +706,18 @@ Current modules: `auth`, `ingredients`, `dish-types`, `meal-types`, `recipes`, `
 
 Key models and their workspace-scoped fields:
 
-| Model                    | Unique constraint                                                    | Notes                                                                                                                                   |
-| ------------------------ | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `Ingredient`             | `(workspace_id, name)`                                               | Has `IngredientAlias` children. System workspace holds the global ingredient dictionary.                                                |
-| `IngredientAlias`        | `(workspace_id, alias)`                                              | Scoped to workspace. Created automatically on ingredient match. Used for search and gap calculation.                                    |
-| `DishType`               | `(workspace_id, name)`                                               |                                                                                                                                         |
-| `MealType`               | `(workspace_id, name)`                                               | Has `MealTypeDishConstraint` children. Has `order Int` field for display ordering.                                                      |
+| Model                    | Unique constraint                                                    | Notes                                                                                                                                                  |
+| ------------------------ | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Ingredient`             | `(workspace_id, name)`                                               | Has `IngredientAlias` children. `category String?` — null treated as `other` on the FE.                                                                |
+| `IngredientAlias`        | `(workspace_id, alias)`                                              | Scoped to workspace. Created automatically on ingredient match. Used for search and gap calculation.                                                   |
+| `DishType`               | `(workspace_id, name)`                                               |                                                                                                                                                        |
+| `MealType`               | `(workspace_id, name)`                                               | Has `MealTypeDishConstraint` children. Has `order Int` field for display ordering.                                                                     |
 | `MealTypeDishConstraint` | `(meal_type_id, dish_type_id)`, `(meal_type_id, day_of_week, order)` | `day_of_week` is `Int?` (0–6, 0 = Sunday), `null` = applies to all days. `order` defines display order of dish constraints within a meal type per day. |
-| `Recipe`                 | `(workspace_id, name)`                                               | Has `RecipeIngredient`, `RecipeMealType`                                                                                                |
-| `RecipeIngredient`       | `(recipe_id, ingredient_id)`                                         | `is_main` must be exactly 1 per recipe (domain rule). `display_name String?` stores what the user typed — falls back to ingredient name if null. |
-| `Schedule`               | `(workspace_id, name)`                                               | Has `ScheduleDay`, `GenerationSetting`                                                                                                  |
-| `ScheduleMeal`           | `(schedule_day_id, meal_type_id)`                                    | Has `MealRecipe` children                                                                                                               |
-| `WorkspaceUser`          | `(user_id, workspace_id)`                                            | Join table with role                                                                                                                    |
+| `Recipe`                 | `(workspace_id, name)`                                               | Has `RecipeIngredient`, `RecipeMealType`                                                                                                               |
+| `RecipeIngredient`       | `(recipe_id, ingredient_id)`                                         | `is_main` must be exactly 1 per recipe (domain rule). `display_name String?` stores what the user typed — falls back to ingredient name if null.       |
+| `Schedule`               | `(workspace_id, name)`                                               | Has `ScheduleDay`, `GenerationSetting`                                                                                                                 |
+| `ScheduleMeal`           | `(schedule_day_id, meal_type_id)`                                    | Has `MealRecipe` children                                                                                                                              |
+| `WorkspaceUser`          | `(user_id, workspace_id)`                                            | Join table with role                                                                                                                                   |
 
 ### day_of_week convention
 
@@ -755,6 +728,10 @@ Key models and their workspace-scoped fields:
 ### RecipeIngredient.display_name
 
 When a user adds an ingredient to a recipe by typing an alias (e.g. "aubergine"), store the typed name in `display_name` so the recipe shows what the user typed. The algorithm uses `ingredient_id` (pointing to the canonical ingredient) for gap calculations. If `display_name` is null, fall back to the parent ingredient name for display.
+
+### Ingredient.category
+
+`category` is a nullable string on the `Ingredient` model. It is set from `prisma/global-ingredients.json` during workspace seeding. The FE treats `null` as `other`. Valid categories: `vegetables`, `fruits`, `proteins`, `dairy`, `grains`, `legumes`, `herbs`, `spices`, `oils-fats`, `nuts-seeds`, `condiments`, `sweeteners`, `baking-confectionery`, `dairy-alternatives`, `alcohol`, `other`.
 
 ---
 
@@ -773,31 +750,38 @@ When a user adds an ingredient to a recipe by typing an alias (e.g. "aubergine")
 - Use `fastify.inject()` to make HTTP calls — no real server needed
 - Test: correct status codes, response shape, auth enforcement, permission enforcement
 - Generate a real signed JWT for authenticated requests
-- Register both `prismaPlugin` and `authPlugin` — `authPlugin` needs `fastify.prisma` for `requirePermission`
+- Do NOT register `prismaPlugin` — instead mock `fastify.prisma` directly so no DB connection is needed
+- `requirePermission` needs `fastify.prisma.permission.findFirst` — mock it to return a permission object
 
 ```ts
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import Fastify from "fastify";
-import prismaPlugin from "../../../plugins/prisma";
-import authPlugin from "../../../plugins/auth";
-import ingredientRoutes from "../ingredients.routes";
-import * as service from "../ingredients.service";
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import Fastify from 'fastify';
+import authPlugin from '../../../plugins/auth';
+import ingredientRoutes from '../ingredients.routes';
+import * as service from '../ingredients.service';
 
-vi.mock("../ingredients.service");
+vi.mock('../ingredients.service');
 
 const buildApp = async () => {
   const app = Fastify();
-  await app.register(prismaPlugin);
+
+  // mock prisma — no DB connection needed in route tests
+  app.decorate('prisma', {
+    permission: {
+      findFirst: vi.fn().mockResolvedValue({ id: 'perm-1', domain: 'ingredients', key: 'create' }),
+    },
+  } as any);
+
   await app.register(authPlugin);
-  await app.register(ingredientRoutes, { prefix: "/ingredients" });
+  await app.register(ingredientRoutes, { prefix: '/ingredients' });
   await app.ready();
   return app;
 };
 
 const signToken = (app: ReturnType<typeof Fastify>) =>
-  app.jwt.sign({ userId: "user-1", workspaceId: "ws-1", role: "admin" });
+  app.jwt.sign({ userId: 'user-1', workspaceId: 'ws-1', role: 'admin' });
 
-describe("GET /ingredients", () => {
+describe('GET /ingredients', () => {
   let app: Awaited<ReturnType<typeof buildApp>>;
 
   beforeEach(async () => {
@@ -807,21 +791,22 @@ describe("GET /ingredients", () => {
     await app.close();
   });
 
-  it("returns 200 with data", async () => {
+  it('returns 200 with data', async () => {
     vi.mocked(service.listIngredients).mockResolvedValue({
-      items: [{ id: "1", name: "Salt", aliases: [] }],
+      items: [{ id: '1', name: 'Salt', category: 'spices', aliases: [] }],
       meta: { page: 1, pageSize: 20, total: 1, totalPages: 1 },
     });
     const res = await app.inject({
-      method: "GET",
-      url: "/ingredients",
+      method: 'GET',
+      url: '/ingredients',
       headers: { authorization: `Bearer ${signToken(app)}` },
     });
     expect(res.statusCode).toBe(200);
+    expect(res.json().data.items[0].category).toBe('spices');
   });
 
-  it("returns 401 without token", async () => {
-    const res = await app.inject({ method: "GET", url: "/ingredients" });
+  it('returns 401 without token', async () => {
+    const res = await app.inject({ method: 'GET', url: '/ingredients' });
     expect(res.statusCode).toBe(401);
   });
 });
@@ -836,26 +821,27 @@ describe("GET /ingredients", () => {
 - Test: business logic, error throwing, edge cases
 
 ```ts
-import { describe, it, expect, vi } from "vitest";
-import { fetchIngredientById } from "../ingredients.service";
-import * as repo from "../ingredients.repository";
+import { describe, it, expect, vi } from 'vitest';
+import { fetchIngredientById } from '../ingredients.service';
+import * as repo from '../ingredients.repository';
 
-vi.mock("../ingredients.repository");
+vi.mock('../ingredients.repository');
 
-describe("fetchIngredientById", () => {
-  it("returns ingredient when found", async () => {
+describe('fetchIngredientById', () => {
+  it('returns ingredient when found', async () => {
     vi.mocked(repo.getIngredientById).mockResolvedValue({
-      id: "1",
-      name: "Salt",
-      workspace_id: "ws-1",
+      id: '1',
+      name: 'Salt',
+      category: 'spices',
+      workspace_id: 'ws-1',
     });
-    const result = await fetchIngredientById({} as any, "1", "ws-1");
-    expect(result.name).toBe("Salt");
+    const result = await fetchIngredientById({} as any, '1', 'ws-1');
+    expect(result.name).toBe('Salt');
   });
 
-  it("throws 404 when not found", async () => {
+  it('throws 404 when not found', async () => {
     vi.mocked(repo.getIngredientById).mockResolvedValue(null);
-    await expect(fetchIngredientById({} as any, "1", "ws-1")).rejects.toThrow();
+    await expect(fetchIngredientById({} as any, '1', 'ws-1')).rejects.toThrow();
   });
 });
 ```
@@ -864,69 +850,89 @@ describe("fetchIngredientById", () => {
 
 ### Test DB setup (one-time, do this before writing repository tests)
 
-1. Create a separate Postgres database for tests, e.g. `mealplanner_test`
-2. Add `DATABASE_TEST_URL` to `.env.test` in `app/server/` — never commit this file:
+1. Create a separate Postgres database for tests, e.g. `meal_planner_test`
+2. Add `DATABASE_URL` to `.env.test` in `app/server/` — never commit this file:
 
 ```
-DATABASE_TEST_URL="postgresql://user@localhost:5432/mealplanner_test"
+DATABASE_URL="postgresql://user@localhost:5432/meal_planner_test"
 ```
 
 3. Add `.env.test` to `.gitignore`
 4. Run migrations against the test DB once:
 
 ```bash
-DATABASE_URL=postgresql://user@localhost:5432/mealplanner_test npx prisma migrate deploy
+DATABASE_URL=postgresql://user@localhost:5432/meal_planner_test npx prisma migrate deploy
 ```
 
-5. Configure Vitest to load `.env.test` in `vitest.config.ts`:
+5. Run seed against the test DB so `requirePermission` works in route tests:
+
+```bash
+DATABASE_URL=postgresql://user@localhost:5432/meal_planner_test npm run db:seed
+```
+
+6. Configure Vitest to load `.env.test` in `vitest.config.ts`:
 
 ```ts
-import { defineConfig } from "vitest/config";
-import dotenv from "dotenv";
+import { defineConfig } from 'vitest/config';
+import dotenv from 'dotenv';
 
-dotenv.config({ path: ".env.test" });
+dotenv.config({ path: '.env.test' });
 
 export default defineConfig({
   test: {
-    environment: "node",
+    environment: 'node',
   },
 });
 ```
 
 ### Repository tests (`<module>.repository.test.ts`)
 
-- Use a real PostgreSQL test database (`DATABASE_TEST_URL` in `.env.test`)
+- Use a real PostgreSQL test database (`DATABASE_URL` in `.env.test`)
 - Truncate relevant tables in `beforeEach` to keep tests isolated — each test starts with a clean slate
+- Create prerequisite records (e.g. workspace) in `beforeAll`, not `beforeEach`
+- Truncate in dependency order — children before parents (e.g. aliases before ingredients)
 - Test: correct Prisma queries, workspace scoping, unique constraint behaviour
 
 ```ts
-import { describe, it, expect, beforeEach } from "vitest";
-import { PrismaClient } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { getIngredientById, createIngredient } from "../ingredients.repository";
+import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
+import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { getIngredientById, createIngredient } from '../ingredients.repository';
 
 const prisma = new PrismaClient({
-  adapter: new PrismaPg({ connectionString: process.env.DATABASE_TEST_URL }),
+  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+});
+
+const WS_ID = '00000000-0000-0000-0000-000000000001';
+
+beforeAll(async () => {
+  await prisma.workspace.upsert({
+    where: { id: WS_ID },
+    update: {},
+    create: { id: WS_ID, name: 'Test Workspace' },
+  });
 });
 
 beforeEach(async () => {
-  await prisma.ingredient.deleteMany();
+  await prisma.ingredientAlias.deleteMany({ where: { workspace_id: WS_ID } });
+  await prisma.ingredient.deleteMany({ where: { workspace_id: WS_ID } });
 });
 
-describe("getIngredientById", () => {
-  it("returns ingredient scoped to workspace", async () => {
+describe('getIngredientById', () => {
+  it('returns ingredient scoped to workspace', async () => {
     const created = await prisma.ingredient.create({
-      data: { name: "Salt", workspace_id: "ws-1" },
+      data: { name: 'Salt', category: 'spices', workspace_id: WS_ID },
     });
-    const result = await getIngredientById(prisma, created.id, "ws-1");
-    expect(result?.name).toBe("Salt");
+    const result = await getIngredientById(prisma, created.id, WS_ID);
+    expect(result?.name).toBe('Salt');
+    expect(result?.category).toBe('spices');
   });
 
-  it("does not return ingredient from different workspace", async () => {
+  it('does not return ingredient from different workspace', async () => {
     const created = await prisma.ingredient.create({
-      data: { name: "Salt", workspace_id: "ws-1" },
+      data: { name: 'Salt', workspace_id: WS_ID },
     });
-    const result = await getIngredientById(prisma, created.id, "ws-2");
+    const result = await getIngredientById(prisma, created.id, 'ws-2');
     expect(result).toBeNull();
   });
 });
@@ -950,7 +956,7 @@ When asked to generate a module, always produce all of these files:
 2. `modules/<module>/<module>.repository.ts` — Prisma queries, always scoped by workspaceId
 3. `modules/<module>/<module>.service.ts` — Business logic, calls repository + domain, handles P2002
 4. `modules/<module>/<module>.routes.ts` — Fastify route plugin, validates with Zod, calls service
-5. `modules/<module>/tests/<module>.routes.test.ts` — Route tests with mocked services
+5. `modules/<module>/tests/<module>.routes.test.ts` — Route tests with mocked services and mocked prisma (no DB)
 6. `modules/<module>/tests/<module>.service.test.ts` — Service tests with mocked repositories
 7. `modules/<module>/tests/<module>.repository.test.ts` — Repository tests against test DB
 8. If the module has business rules or algorithms, create either:
