@@ -1,0 +1,29 @@
+{
+  "name": "meal-planner",
+  "version": "1.0.0",
+  "description": "Application for generating a varied meal plan for kitchens",
+  "main": "index.js",
+  "workspaces": [
+    "server",
+    "client",
+    "packages/*"
+  ],
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ifatBR/meal-planner.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ifatBR/meal-planner/issues"
+  },
+  "homepage": "https://github.com/ifatBR/meal-planner#readme"
+}
