@@ -4,13 +4,13 @@ import { PrismaClient } from '@prisma/client';
 import {
   listIngredients as listIngredientsRepo,
   getIngredientById,
-  getAllIngredientNamesAndAliases,
+  getAllIngredientNamesAndVariants,
   createIngredient as createIngredientRepo,
   updateIngredient as updateIngredientRepo,
   deleteIngredient as deleteIngredientRepo,
-  getAliasById,
-  createAlias,
-  deleteAlias as deleteAliasRepo,
+  getVariantById,
+  createVariant,
+  deleteVariant as deleteVariantRepo,
 } from './ingredients.repository';
 import { hasWorkspaceConflict, normalise } from './domain/ingredients.rules';
 import { findMatchingIngredient } from './domain/ingredients.algorithms';
@@ -50,7 +50,7 @@ export const fetchIngredientById = async (
 };
 
 export const matchIngredient = async (prisma: PrismaClient, name: string, workspaceId: string) => {
-  const candidates = await getAllIngredientNamesAndAliases(prisma, workspaceId);
+  const candidates = await getAllIngredientNamesAndVariants(prisma, workspaceId);
   const result = await findMatchingIngredient(name, candidates);
 
   if (!result) return { matched: false as const, ingredient: null };
@@ -60,11 +60,11 @@ export const matchIngredient = async (prisma: PrismaClient, name: string, worksp
 
   const normalizedInput = normalise(name);
   const normalizedIngName = normalise(ingredient.name);
-  const existingAliases = ingredient.ingredient_aliases.map((a) => normalise(a.alias));
+  const existingVariants = ingredient.ingredient_variants.map((a) => normalise(a.variant));
 
-  if (normalizedInput !== normalizedIngName && !existingAliases.includes(normalizedInput)) {
+  if (normalizedInput !== normalizedIngName && !existingVariants.includes(normalizedInput)) {
     try {
-      await createAlias(prisma, { ingredientId: ingredient.id, alias: name }, workspaceId);
+      await createVariant(prisma, { ingredientId: ingredient.id, variant: name }, workspaceId);
     } catch (err) {
       if (isP2002(err)) throw conflictError();
       throw err;
@@ -79,11 +79,11 @@ export const createIngredient = async (
   data: { name: string },
   workspaceId: string,
 ) => {
-  const existing = await getAllIngredientNamesAndAliases(prisma, workspaceId);
+  const existing = await getAllIngredientNamesAndVariants(prisma, workspaceId);
   const names = existing.map((e) => e.name);
-  const aliases = existing.flatMap((e) => e.aliases);
+  const variants = existing.flatMap((e) => e.variants);
 
-  if (hasWorkspaceConflict(data.name, names, aliases)) throw conflictError();
+  if (hasWorkspaceConflict(data.name, names, variants)) throw conflictError();
 
   try {
     return await createIngredientRepo(prisma, data, workspaceId);
@@ -102,11 +102,11 @@ export const updateIngredient = async (
   const ingredient = await getIngredientById(prisma, id, workspaceId);
   if (!ingredient) throw notFoundError();
 
-  const existing = await getAllIngredientNamesAndAliases(prisma, workspaceId);
+  const existing = await getAllIngredientNamesAndVariants(prisma, workspaceId);
   const names = existing.filter((e) => e.id !== id).map((e) => e.name);
-  const aliases = existing.filter((e) => e.id !== id).flatMap((e) => e.aliases);
+  const variants = existing.filter((e) => e.id !== id).flatMap((e) => e.variants);
 
-  if (hasWorkspaceConflict(data.name, names, aliases)) throw conflictError();
+  if (hasWorkspaceConflict(data.name, names, variants)) throw conflictError();
 
   try {
     return await updateIngredientRepo(prisma, id, workspaceId, data);
@@ -123,45 +123,45 @@ export const deleteIngredient = async (prisma: PrismaClient, id: string, workspa
   return { id };
 };
 
-export const addAlias = async (
+export const addVariant = async (
   prisma: PrismaClient,
   ingredientId: string,
   workspaceId: string,
-  alias: string,
+  variant: string,
 ) => {
   const ingredient = await getIngredientById(prisma, ingredientId, workspaceId);
   if (!ingredient) throw notFoundError();
 
-  const existing = await getAllIngredientNamesAndAliases(prisma, workspaceId);
+  const existing = await getAllIngredientNamesAndVariants(prisma, workspaceId);
   const names = existing.map((e) => e.name);
-  const aliases = existing.flatMap((e) => e.aliases);
+  const variants = existing.flatMap((e) => e.variants);
 
-  if (hasWorkspaceConflict(alias, names, aliases)) throw conflictError();
+  if (hasWorkspaceConflict(variant, names, variants)) throw conflictError();
 
   try {
-    return await createAlias(prisma, { ingredientId, alias }, workspaceId);
+    return await createVariant(prisma, { ingredientId, variant }, workspaceId);
   } catch (err) {
     if (isP2002(err)) throw conflictError();
     throw err;
   }
 };
 
-export const removeAlias = async (
+export const removeVariant = async (
   prisma: PrismaClient,
   ingredientId: string,
-  aliasId: string,
+  variantId: string,
   workspaceId: string,
 ) => {
-  const alias = await getAliasById(prisma, aliasId, workspaceId);
-  if (!alias || alias.ingredient_id !== ingredientId) throw notFoundError();
-  await deleteAliasRepo(prisma, aliasId);
-  return { id: aliasId };
+  const variant = await getVariantById(prisma, variantId, workspaceId);
+  if (!variant || variant.ingredient_id !== ingredientId) throw notFoundError();
+  await deleteVariantRepo(prisma, variantId);
+  return { id: variantId };
 };
 
 export const seedWorkspaceIngredients = async (prisma: PrismaClient, workspaceId: string) => {
   const filePath = path.resolve(__dirname, '../../../prisma/global-ingredients.json');
   const raw = fs.readFileSync(filePath, 'utf-8');
-  const globalIngredients: Array<{ name: string; category?: string; aliases: string[] }> =
+  const globalIngredients: Array<{ name: string; category?: string; variants: string[] }> =
     JSON.parse(raw);
 
   for (const item of globalIngredients) {
@@ -171,10 +171,10 @@ export const seedWorkspaceIngredients = async (prisma: PrismaClient, workspaceId
         { name: item.name, category: item.category },
         workspaceId,
       );
-      if (item.aliases.length > 0) {
-        await prisma.ingredientAlias.createMany({
-          data: item.aliases.map((alias) => ({
-            alias,
+      if (item.variants.length > 0) {
+        await prisma.ingredientVariant.createMany({
+          data: item.variants.map((variant) => ({
+            variant,
             ingredient_id: ingredient.id,
             workspace_id: workspaceId,
           })),

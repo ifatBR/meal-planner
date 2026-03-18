@@ -5,8 +5,8 @@ import {
   UpdateIngredientSchema,
   IngredientParamsSchema,
   MatchIngredientSchema,
-  AddAliasSchema,
-  AliasParamsSchema,
+  AddVariantSchema,
+  VariantParamsSchema,
 } from '@app/types/ingredients';
 import {
   listIngredients,
@@ -15,8 +15,8 @@ import {
   createIngredient,
   updateIngredient,
   deleteIngredient,
-  addAlias,
-  removeAlias,
+  addVariant,
+  removeVariant,
 } from './ingredients.service';
 import { PERMISSIONS } from '../../constants';
 
@@ -82,41 +82,43 @@ async function ingredientRoutes(fastify: FastifyInstance) {
       preHandler: [fastify.authenticate, fastify.requirePermission(PERMISSIONS.INGREDIENTS.DELETE)],
     },
     async (request) => {
+      console.log('request.params:', request.params);
       const params = IngredientParamsSchema.parse(request.params);
+      console.log('params:', params);
       const result = await deleteIngredient(fastify.prisma, params.id, request.user.workspaceId);
       return { data: result };
     },
   );
 
   fastify.post(
-    '/:id/aliases',
+    '/:id/variants',
     {
       preHandler: [fastify.authenticate, fastify.requirePermission(PERMISSIONS.INGREDIENTS.UPDATE)],
     },
     async (request, reply) => {
       const params = IngredientParamsSchema.parse(request.params);
-      const body = AddAliasSchema.parse(request.body);
-      const result = await addAlias(
+      const body = AddVariantSchema.parse(request.body);
+      const result = await addVariant(
         fastify.prisma,
         params.id,
         request.user.workspaceId,
-        body.alias,
+        body.variant,
       );
       return reply.status(201).send({ data: result });
     },
   );
 
   fastify.delete(
-    '/:id/aliases/:aliasId',
+    '/:id/variants/:variantId',
     {
       preHandler: [fastify.authenticate, fastify.requirePermission(PERMISSIONS.INGREDIENTS.DELETE)],
     },
     async (request) => {
-      const params = AliasParamsSchema.parse(request.params);
-      const result = await removeAlias(
+      const params = VariantParamsSchema.parse(request.params);
+      const result = await removeVariant(
         fastify.prisma,
         params.id,
-        params.aliasId,
+        params.variantId,
         request.user.workspaceId,
       );
       return { data: result };

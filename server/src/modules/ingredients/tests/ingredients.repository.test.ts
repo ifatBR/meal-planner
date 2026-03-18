@@ -7,9 +7,9 @@ import {
   listIngredients,
   updateIngredient,
   deleteIngredient,
-  createAlias,
-  getAliasById,
-  deleteAlias,
+  createVariant,
+  getVariantById,
+  deleteVariant,
 } from '../ingredients.repository';
 
 const prisma = new PrismaClient({
@@ -28,7 +28,7 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  await prisma.ingredientAlias.deleteMany();
+  await prisma.ingredientVariant.deleteMany();
   await prisma.ingredient.deleteMany();
 });
 
@@ -37,12 +37,12 @@ afterAll(async () => {
 });
 
 describe('createIngredient', () => {
-  it('creates and returns ingredient with empty aliases', async () => {
+  it('creates and returns ingredient with empty variants', async () => {
     const result = await createIngredient(prisma, { name: 'Salt', category: 'spices' }, WS_ID);
     expect(result.name).toBe('Salt');
     expect(result.category).toBe('spices');
     expect(result.workspace_id).toBe(WS_ID);
-    expect(result.ingredient_aliases).toEqual([]);
+    expect(result.ingredient_variants).toEqual([]);
   });
 
   it('stores null category when not provided', async () => {
@@ -108,24 +108,32 @@ describe('deleteIngredient', () => {
   });
 });
 
-describe('alias operations', () => {
-  it('creates, finds, and deletes alias', async () => {
+describe('variant operations', () => {
+  it('creates, finds, and deletes variant', async () => {
     const ing = await createIngredient(prisma, { name: 'Eggplant' }, WS_ID);
-    const alias = await createAlias(prisma, { ingredientId: ing.id, alias: 'Aubergine' }, WS_ID);
+    const variant = await createVariant(
+      prisma,
+      { ingredientId: ing.id, variant: 'Aubergine' },
+      WS_ID,
+    );
 
-    const found = await getAliasById(prisma, alias.id, WS_ID);
-    expect(found?.alias).toBe('Aubergine');
+    const found = await getVariantById(prisma, variant.id, WS_ID);
+    expect(found?.variant).toBe('Aubergine');
     expect(found?.ingredient_id).toBe(ing.id);
 
-    await deleteAlias(prisma, alias.id);
-    const gone = await getAliasById(prisma, alias.id, WS_ID);
+    await deleteVariant(prisma, variant.id);
+    const gone = await getVariantById(prisma, variant.id, WS_ID);
     expect(gone).toBeNull();
   });
 
-  it('getAliasById returns null for different workspace', async () => {
+  it('getVariantById returns null for different workspace', async () => {
     const ing = await createIngredient(prisma, { name: 'Eggplant' }, WS_ID);
-    const alias = await createAlias(prisma, { ingredientId: ing.id, alias: 'Aubergine' }, WS_ID);
-    const result = await getAliasById(prisma, alias.id, OTHER_WS);
+    const variant = await createVariant(
+      prisma,
+      { ingredientId: ing.id, variant: 'Aubergine' },
+      WS_ID,
+    );
+    const result = await getVariantById(prisma, variant.id, OTHER_WS);
     expect(result).toBeNull();
   });
 });

@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 
-const aliasSelect = { select: { id: true, alias: true } };
+const variantSelect = { select: { id: true, variant: true } };
 
 export const listIngredients = async (
   prisma: PrismaClient,
@@ -15,8 +15,8 @@ export const listIngredients = async (
           OR: [
             { name: { contains: search, mode: 'insensitive' as const } },
             {
-              ingredient_aliases: {
-                some: { alias: { contains: search, mode: 'insensitive' as const } },
+              ingredient_variants: {
+                some: { variant: { contains: search, mode: 'insensitive' as const } },
               },
             },
           ],
@@ -36,7 +36,7 @@ export const listIngredients = async (
         workspace_id: true,
         created_at: true,
         updated_at: true,
-        ingredient_aliases: aliasSelect,
+        ingredient_variants: variantSelect,
       },
     }),
     prisma.ingredient.count({ where }),
@@ -47,11 +47,11 @@ export const listIngredients = async (
 export const getIngredientById = async (prisma: PrismaClient, id: string, workspaceId: string) => {
   return prisma.ingredient.findFirst({
     where: { id, workspace_id: workspaceId },
-    include: { ingredient_aliases: aliasSelect },
+    include: { ingredient_variants: variantSelect },
   });
 };
 
-export const getAllIngredientNamesAndAliases = async (
+export const getAllIngredientNamesAndVariants = async (
   prisma: PrismaClient,
   workspaceId: string,
 ) => {
@@ -60,13 +60,13 @@ export const getAllIngredientNamesAndAliases = async (
     select: {
       id: true,
       name: true,
-      ingredient_aliases: { select: { alias: true } },
+      ingredient_variants: { select: { variant: true } },
     },
   });
   return ingredients.map((i) => ({
     id: i.id,
     name: i.name,
-    aliases: i.ingredient_aliases.map((a) => a.alias),
+    variants: i.ingredient_variants.map((a) => a.variant),
   }));
 };
 
@@ -77,7 +77,7 @@ export const createIngredient = async (
 ) => {
   return prisma.ingredient.create({
     data: { name: data.name, category: data.category ?? null, workspace_id: workspaceId },
-    include: { ingredient_aliases: aliasSelect },
+    include: { ingredient_variants: variantSelect },
   });
 };
 
@@ -90,7 +90,7 @@ export const updateIngredient = async (
   return prisma.ingredient.update({
     where: { id },
     data: { name: data.name, category: data.category },
-    include: { ingredient_aliases: aliasSelect },
+    include: { ingredient_variants: variantSelect },
   });
 };
 
@@ -98,26 +98,30 @@ export const deleteIngredient = async (prisma: PrismaClient, id: string) => {
   return prisma.ingredient.delete({ where: { id } });
 };
 
-export const getAliasById = async (prisma: PrismaClient, aliasId: string, workspaceId: string) => {
-  return prisma.ingredientAlias.findFirst({
-    where: { id: aliasId, workspace_id: workspaceId },
+export const getVariantById = async (
+  prisma: PrismaClient,
+  variantId: string,
+  workspaceId: string,
+) => {
+  return prisma.ingredientVariant.findFirst({
+    where: { id: variantId, workspace_id: workspaceId },
   });
 };
 
-export const createAlias = async (
+export const createVariant = async (
   prisma: PrismaClient,
-  data: { ingredientId: string; alias: string },
+  data: { ingredientId: string; variant: string },
   workspaceId: string,
 ) => {
-  return prisma.ingredientAlias.create({
+  return prisma.ingredientVariant.create({
     data: {
-      alias: data.alias,
+      variant: data.variant,
       ingredient_id: data.ingredientId,
       workspace_id: workspaceId,
     },
   });
 };
 
-export const deleteAlias = async (prisma: PrismaClient, aliasId: string) => {
-  return prisma.ingredientAlias.delete({ where: { id: aliasId } });
+export const deleteVariant = async (prisma: PrismaClient, variantId: string) => {
+  return prisma.ingredientVariant.delete({ where: { id: variantId } });
 };

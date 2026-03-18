@@ -71,7 +71,7 @@ model Workspace {
   dish_types         DishType[]        @relation("DishTypeWorkspace")
   recipes            Recipe[]          @relation("RecipeWorkspace")
   ingredients        Ingredient[]      @relation("IngredientWorkspace")
-  ingredient_aliases IngredientAlias[] @relation("IngredientAliasWorkspace")
+  ingredient_variants IngredientVariant[] @relation("IngredientVariantWorkspace")
   schedules          Schedule[]        @relation("ScheduleWorkspace")
   workspace_users    WorkspaceUser[]   @relation("WorkspaceWorkspaceUsers")
 
@@ -207,23 +207,23 @@ model Ingredient {
 
   workspace          Workspace          @relation("IngredientWorkspace", fields: [workspace_id], references: [id])
   recipe_ingredients RecipeIngredient[] @relation("RecipeIngredients")
-  ingredient_aliases IngredientAlias[]  @relation("IngredientAliasIngredient")
+  ingredient_variants IngredientVariant[]  @relation("IngredientVariantIngredient")
 
   @@unique([workspace_id, name])
   @@map("ingredients")
 }
 
-model IngredientAlias {
+model IngredientVariant {
   id            String @id @default(uuid()) @db.Uuid
-  alias         String
+  variant         String
   ingredient_id String @db.Uuid
   workspace_id  String @db.Uuid
 
-  ingredient Ingredient @relation("IngredientAliasIngredient", fields: [ingredient_id], references: [id])
-  workspace  Workspace  @relation("IngredientAliasWorkspace", fields: [workspace_id], references: [id])
+  ingredient Ingredient @relation("IngredientVariantIngredient", fields: [ingredient_id], references: [id])
+  workspace  Workspace  @relation("IngredientVariantWorkspace", fields: [workspace_id], references: [id])
 
-  @@unique([workspace_id, alias])
-  @@map("ingredient_aliases")
+  @@unique([workspace_id, variant])
+  @@map("ingredient_variants")
 }
 
 model Schedule {

@@ -5,7 +5,7 @@ dotenv.config({ path: '.env.test' });
 
 export default defineConfig({
   resolve: {
-    alias: {
+    variant: {
       '@modules': '/absolute/path/to/src/modules',
     },
   },

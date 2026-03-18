@@ -30,7 +30,7 @@ const signToken = (app: Awaited<ReturnType<typeof buildApp>>) =>
   app.jwt.sign({ userId: 'user-1', workspaceId: 'ws-1', role: 'admin' as const });
 
 const ING_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
-const ALIAS_ID = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+const VARIANT_ID = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
 
 const mockIngredient = {
   id: ING_ID,
@@ -39,7 +39,7 @@ const mockIngredient = {
   workspace_id: 'ws-1',
   created_at: new Date(),
   updated_at: new Date(),
-  ingredient_aliases: [] as { id: string; alias: string }[],
+  ingredient_variants: [] as { id: string; variant: string }[],
 };
 
 describe('GET /ingredients', () => {
@@ -206,7 +206,7 @@ describe('DELETE /ingredients/:id', () => {
   });
 });
 
-describe('POST /ingredients/:id/aliases', () => {
+describe('POST /ingredients/:id/variants', () => {
   let app: Awaited<ReturnType<typeof buildApp>>;
   beforeEach(async () => {
     app = await buildApp();
@@ -215,25 +215,25 @@ describe('POST /ingredients/:id/aliases', () => {
     await app.close();
   });
 
-  it('returns 201 with created alias', async () => {
-    vi.mocked(service.addAlias).mockResolvedValue({
-      id: ALIAS_ID,
-      alias: 'table salt',
+  it('returns 201 with created variant', async () => {
+    vi.mocked(service.addVariant).mockResolvedValue({
+      id: VARIANT_ID,
+      variant: 'table salt',
       ingredient_id: ING_ID,
       workspace_id: 'ws-1',
     });
     const res = await app.inject({
       method: 'POST',
-      url: `/ingredients/${ING_ID}/aliases`,
+      url: `/ingredients/${ING_ID}/variants`,
       headers: { authorization: `Bearer ${signToken(app)}` },
-      payload: { alias: 'table salt' },
+      payload: { variant: 'table salt' },
     });
     expect(res.statusCode).toBe(201);
-    expect(res.json().data.alias).toBe('table salt');
+    expect(res.json().data.variant).toBe('table salt');
   });
 });
 
-describe('DELETE /ingredients/:id/aliases/:aliasId', () => {
+describe('DELETE /ingredients/:id/variants/:variantId', () => {
   let app: Awaited<ReturnType<typeof buildApp>>;
   beforeEach(async () => {
     app = await buildApp();
@@ -242,14 +242,14 @@ describe('DELETE /ingredients/:id/aliases/:aliasId', () => {
     await app.close();
   });
 
-  it('returns 200 with deleted alias id', async () => {
-    vi.mocked(service.removeAlias).mockResolvedValue({ id: ALIAS_ID });
+  it('returns 200 with deleted variant id', async () => {
+    vi.mocked(service.removeVariant).mockResolvedValue({ id: VARIANT_ID });
     const res = await app.inject({
       method: 'DELETE',
-      url: `/ingredients/${ING_ID}/aliases/${ALIAS_ID}`,
+      url: `/ingredients/${ING_ID}/variants/${VARIANT_ID}`,
       headers: { authorization: `Bearer ${signToken(app)}` },
     });
     expect(res.statusCode).toBe(200);
-    expect(res.json().data.id).toBe(ALIAS_ID);
+    expect(res.json().data.id).toBe(VARIANT_ID);
   });
 });

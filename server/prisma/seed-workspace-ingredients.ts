@@ -1,5 +1,5 @@
 // Use it for one time run when you want to test the db with ingredients
-//run it with tsx prisma/seed-workspace-ingredients.ts <workspaceid>
+//run it in the cli with: npx tsx prisma/seed-workspace-ingredients.ts <workspaceid>
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import globalIngredients from './global-ingredients.json';
@@ -35,17 +35,17 @@ async function main() {
       },
     });
 
-    for (const alias of ingredient.aliases) {
-      await prisma.ingredientAlias.upsert({
+    for (const variant of ingredient.variants) {
+      await prisma.ingredientVariant.upsert({
         where: {
-          workspace_id_alias: {
+          workspace_id_variant: {
             workspace_id: workspaceId,
-            alias,
+            variant,
           },
         },
         update: {},
         create: {
-          alias,
+          variant,
           ingredient_id: created.id,
           workspace_id: workspaceId,
         },

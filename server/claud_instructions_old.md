@@ -628,7 +628,7 @@ Key models and their workspace-scoped fields:
 
 | Model              | Unique constraint                 | Notes                                                |
 | ------------------ | --------------------------------- | ---------------------------------------------------- |
-| `Ingredient`       | `(workspace_id, name)`            | Has `IngredientAlias` children                       |
+| `Ingredient`       | `(workspace_id, name)`            | Has `IngredientVariant` children                     |
 | `DishType`         | `(workspace_id, name)`            |                                                      |
 | `MealType`         | `(workspace_id, name)`            | Has `MealTypeDishConstraint` children                |
 | `Recipe`           | `(workspace_id, name)`            | Has `RecipeIngredient`, `RecipeMealType`             |

@@ -51,10 +51,10 @@ ingredients,name,string,FALSE,FALSE,FALSE,,,FALSE,,
 ingredients,created_at,timestamp,FALSE,FALSE,FALSE,,,FALSE,now(),
 ingredients,updated_at,timestamp,FALSE,FALSE,FALSE,,,FALSE,now(),
 ingredients,workspace_id,uuid,FALSE,FALSE,TRUE,workspaces,id,FALSE,,IngredientWorkspace
-ingredient_aliases,id,uuid,FALSE,TRUE,FALSE,,,TRUE,uuid(),
-ingredient_aliases,alias,string,FALSE,FALSE,FALSE,,,FALSE,,
-ingredient_aliases,ingredient_id,uuid,FALSE,FALSE,TRUE,ingredients,id,FALSE,,IngredientAliasIngredient
-ingredient_aliases,workspace_id,uuid,FALSE,FALSE,TRUE,workspaces,id,FALSE,,IngredientAliasWorkspace
+ingredient_variants,id,uuid,FALSE,TRUE,FALSE,,,TRUE,uuid(),
+ingredient_variants,variant,string,FALSE,FALSE,FALSE,,,FALSE,,
+ingredient_variants,ingredient_id,uuid,FALSE,FALSE,TRUE,ingredients,id,FALSE,,IngredientVariantIngredient
+ingredient_variants,workspace_id,uuid,FALSE,FALSE,TRUE,workspaces,id,FALSE,,IngredientVariantWorkspace
 schedule_days,id,uuid,FALSE,TRUE,FALSE,,,TRUE,uuid(),
 schedule_days,schedule_id,uuid,FALSE,FALSE,TRUE,schedules,id,FALSE,,ScheduleDays
 schedule_days,date,date,FALSE,FALSE,FALSE,,,FALSE,,

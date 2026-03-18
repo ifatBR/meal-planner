@@ -418,8 +418,8 @@ await seedWorkspaceIngredients(prisma, workspace.id);
 
 ```json
 [
-  { "name": "eggplant", "category": "vegetables", "aliases": ["aubergine", "brinjal"] },
-  { "name": "cilantro", "category": "herbs", "aliases": ["coriander", "dhania"] }
+  { "name": "eggplant", "category": "vegetables", "variants": ["aubergine", "brinjal"] },
+  { "name": "cilantro", "category": "herbs", "variants": ["coriander", "dhania"] }
 ]
 ```
 
@@ -708,8 +708,8 @@ Key models and their workspace-scoped fields:
 
 | Model                    | Unique constraint                                                    | Notes                                                                                                                                                  |
 | ------------------------ | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `Ingredient`             | `(workspace_id, name)`                                               | Has `IngredientAlias` children. `category String?` — null treated as `other` on the FE.                                                                |
-| `IngredientAlias`        | `(workspace_id, alias)`                                              | Scoped to workspace. Created automatically on ingredient match. Used for search and gap calculation.                                                   |
+| `Ingredient`             | `(workspace_id, name)`                                               | Has `IngredientVariant` children. `category String?` — null treated as `other` on the FE.                                                              |
+| `IngredientVariant`      | `(workspace_id, variant)`                                            | Scoped to workspace. Created automatically on ingredient match. Used for search and gap calculation.                                                   |
 | `DishType`               | `(workspace_id, name)`                                               |                                                                                                                                                        |
 | `MealType`               | `(workspace_id, name)`                                               | Has `MealTypeDishConstraint` children. Has `order Int` field for display ordering.                                                                     |
 | `MealTypeDishConstraint` | `(meal_type_id, dish_type_id)`, `(meal_type_id, day_of_week, order)` | `day_of_week` is `Int?` (0–6, 0 = Sunday), `null` = applies to all days. `order` defines display order of dish constraints within a meal type per day. |
@@ -727,7 +727,7 @@ Key models and their workspace-scoped fields:
 
 ### RecipeIngredient.display_name
 
-When a user adds an ingredient to a recipe by typing an alias (e.g. "aubergine"), store the typed name in `display_name` so the recipe shows what the user typed. The algorithm uses `ingredient_id` (pointing to the canonical ingredient) for gap calculations. If `display_name` is null, fall back to the parent ingredient name for display.
+When a user adds an ingredient to a recipe by typing an variant (e.g. "aubergine"), store the typed name in `display_name` so the recipe shows what the user typed. The algorithm uses `ingredient_id` (pointing to the canonical ingredient) for gap calculations. If `display_name` is null, fall back to the parent ingredient name for display.
 
 ### Ingredient.category
 
@@ -793,7 +793,7 @@ describe('GET /ingredients', () => {
 
   it('returns 200 with data', async () => {
     vi.mocked(service.listIngredients).mockResolvedValue({
-      items: [{ id: '1', name: 'Salt', category: 'spices', aliases: [] }],
+      items: [{ id: '1', name: 'Salt', category: 'spices', variants: [] }],
       meta: { page: 1, pageSize: 20, total: 1, totalPages: 1 },
     });
     const res = await app.inject({
@@ -890,7 +890,7 @@ export default defineConfig({
 - Use a real PostgreSQL test database (`DATABASE_URL` in `.env.test`)
 - Truncate relevant tables in `beforeEach` to keep tests isolated — each test starts with a clean slate
 - Create prerequisite records (e.g. workspace) in `beforeAll`, not `beforeEach`
-- Truncate in dependency order — children before parents (e.g. aliases before ingredients)
+- Truncate in dependency order — children before parents (e.g. variants before ingredients)
 - Test: correct Prisma queries, workspace scoping, unique constraint behaviour
 
 ```ts
@@ -914,7 +914,7 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  await prisma.ingredientAlias.deleteMany({ where: { workspace_id: WS_ID } });
+  await prisma.ingredientVariant.deleteMany({ where: { workspace_id: WS_ID } });
   await prisma.ingredient.deleteMany({ where: { workspace_id: WS_ID } });
 });
 

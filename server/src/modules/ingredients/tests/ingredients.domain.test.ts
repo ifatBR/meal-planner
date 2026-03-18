@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   normalise,
   isNameConflict,
-  isAliasConflict,
+  isVariantConflict,
   hasWorkspaceConflict,
 } from '../domain/ingredients.rules';
 
@@ -23,26 +23,26 @@ describe('isNameConflict', () => {
   });
 });
 
-describe('isAliasConflict', () => {
+describe('isVariantConflict', () => {
   it('returns true on case-insensitive match', () => {
-    expect(isAliasConflict('Aubergine', ['aubergine', 'brinjal'])).toBe(true);
+    expect(isVariantConflict('Aubergine', ['aubergine', 'brinjal'])).toBe(true);
   });
   it('returns false when no match', () => {
-    expect(isAliasConflict('eggplant', ['aubergine', 'brinjal'])).toBe(false);
+    expect(isVariantConflict('eggplant', ['aubergine', 'brinjal'])).toBe(false);
   });
 });
 
 describe('hasWorkspaceConflict', () => {
   const names = ['tomato', 'basil'];
-  const aliases = ['aubergine', 'brinjal'];
+  const variants = ['aubergine', 'brinjal'];
 
   it('returns true when conflicts with an existing name', () => {
-    expect(hasWorkspaceConflict('Tomato', names, aliases)).toBe(true);
+    expect(hasWorkspaceConflict('Tomato', names, variants)).toBe(true);
   });
-  it('returns true when conflicts with an existing alias', () => {
-    expect(hasWorkspaceConflict('AUBERGINE', names, aliases)).toBe(true);
+  it('returns true when conflicts with an existing variant', () => {
+    expect(hasWorkspaceConflict('AUBERGINE', names, variants)).toBe(true);
   });
   it('returns false when no conflict', () => {
-    expect(hasWorkspaceConflict('cilantro', names, aliases)).toBe(false);
+    expect(hasWorkspaceConflict('cilantro', names, variants)).toBe(false);
   });
 });

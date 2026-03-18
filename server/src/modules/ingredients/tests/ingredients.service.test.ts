@@ -5,8 +5,8 @@ import {
   createIngredient,
   updateIngredient,
   deleteIngredient,
-  addAlias,
-  removeAlias,
+  addVariant,
+  removeVariant,
 } from '../ingredients.service';
 import * as repo from '../ingredients.repository';
 import * as algorithms from '../domain/ingredients.algorithms';
@@ -23,7 +23,7 @@ const mockIngredient = {
   workspace_id: 'ws-1',
   created_at: new Date(),
   updated_at: new Date(),
-  ingredient_aliases: [] as { id: string; alias: string }[],
+  ingredient_variants: [] as { id: string; variant: string }[],
 };
 
 describe('fetchIngredientById', () => {
@@ -50,7 +50,7 @@ describe('listIngredients', () => {
 
 describe('createIngredient', () => {
   beforeEach(() => {
-    vi.mocked(repo.getAllIngredientNamesAndAliases).mockResolvedValue([]);
+    vi.mocked(repo.getAllIngredientNamesAndVariants).mockResolvedValue([]);
     vi.mocked(repo.createIngredient).mockResolvedValue(mockIngredient);
   });
 
@@ -60,15 +60,15 @@ describe('createIngredient', () => {
   });
 
   it('throws conflict when name matches existing name (case-insensitive)', async () => {
-    vi.mocked(repo.getAllIngredientNamesAndAliases).mockResolvedValue([
-      { id: 'ing-2', name: 'salt', aliases: [] },
+    vi.mocked(repo.getAllIngredientNamesAndVariants).mockResolvedValue([
+      { id: 'ing-2', name: 'salt', variants: [] },
     ]);
     await expect(createIngredient(mockPrisma, { name: 'Salt' }, 'ws-1')).rejects.toThrow();
   });
 
-  it('throws conflict when name matches existing alias', async () => {
-    vi.mocked(repo.getAllIngredientNamesAndAliases).mockResolvedValue([
-      { id: 'ing-2', name: 'eggplant', aliases: ['aubergine'] },
+  it('throws conflict when name matches existing variant', async () => {
+    vi.mocked(repo.getAllIngredientNamesAndVariants).mockResolvedValue([
+      { id: 'ing-2', name: 'eggplant', variants: ['aubergine'] },
     ]);
     await expect(createIngredient(mockPrisma, { name: 'Aubergine' }, 'ws-1')).rejects.toThrow();
   });
@@ -84,8 +84,8 @@ describe('updateIngredient', () => {
 
   it('excludes self from conflict check and updates successfully', async () => {
     vi.mocked(repo.getIngredientById).mockResolvedValue(mockIngredient);
-    vi.mocked(repo.getAllIngredientNamesAndAliases).mockResolvedValue([
-      { id: 'ing-1', name: 'Salt', aliases: [] },
+    vi.mocked(repo.getAllIngredientNamesAndVariants).mockResolvedValue([
+      { id: 'ing-1', name: 'Salt', variants: [] },
     ]);
     vi.mocked(repo.updateIngredient).mockResolvedValue({ ...mockIngredient, name: 'Fine Salt' });
     const result = await updateIngredient(mockPrisma, 'ing-1', 'ws-1', { name: 'Fine Salt' });
@@ -107,34 +107,34 @@ describe('deleteIngredient', () => {
   });
 });
 
-describe('addAlias', () => {
+describe('addVariant', () => {
   it('throws 404 when ingredient not found', async () => {
     vi.mocked(repo.getIngredientById).mockResolvedValue(null);
-    await expect(addAlias(mockPrisma, 'ing-1', 'ws-1', 'alias')).rejects.toThrow();
+    await expect(addVariant(mockPrisma, 'ing-1', 'ws-1', 'variant')).rejects.toThrow();
   });
 
-  it('throws conflict when alias conflicts with existing value', async () => {
+  it('throws conflict when variant conflicts with existing value', async () => {
     vi.mocked(repo.getIngredientById).mockResolvedValue(mockIngredient);
-    vi.mocked(repo.getAllIngredientNamesAndAliases).mockResolvedValue([
-      { id: 'ing-1', name: 'Salt', aliases: ['table salt'] },
+    vi.mocked(repo.getAllIngredientNamesAndVariants).mockResolvedValue([
+      { id: 'ing-1', name: 'Salt', variants: ['table salt'] },
     ]);
-    await expect(addAlias(mockPrisma, 'ing-1', 'ws-1', 'Table Salt')).rejects.toThrow();
+    await expect(addVariant(mockPrisma, 'ing-1', 'ws-1', 'Table Salt')).rejects.toThrow();
   });
 });
 
-describe('removeAlias', () => {
-  it('throws 404 when alias not found', async () => {
-    vi.mocked(repo.getAliasById).mockResolvedValue(null);
-    await expect(removeAlias(mockPrisma, 'ing-1', 'alias-1', 'ws-1')).rejects.toThrow();
+describe('removeVariant', () => {
+  it('throws 404 when variant not found', async () => {
+    vi.mocked(repo.getVariantById).mockResolvedValue(null);
+    await expect(removeVariant(mockPrisma, 'ing-1', 'variant-1', 'ws-1')).rejects.toThrow();
   });
 
-  it('throws 404 when alias belongs to different ingredient', async () => {
-    vi.mocked(repo.getAliasById).mockResolvedValue({
-      id: 'alias-1',
-      alias: 'aubergine',
+  it('throws 404 when variant belongs to different ingredient', async () => {
+    vi.mocked(repo.getVariantById).mockResolvedValue({
+      id: 'variant-1',
+      variant: 'aubergine',
       ingredient_id: 'ing-99',
       workspace_id: 'ws-1',
     });
-    await expect(removeAlias(mockPrisma, 'ing-1', 'alias-1', 'ws-1')).rejects.toThrow();
+    await expect(removeVariant(mockPrisma, 'ing-1', 'variant-1', 'ws-1')).rejects.toThrow();
   });
 });

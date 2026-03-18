@@ -5,13 +5,13 @@ export const isNameConflict = (name: string, existingNames: string[]): boolean =
   return existingNames.some((n) => normalise(n) === normalized);
 };
 
-export const isAliasConflict = (alias: string, existingAliases: string[]): boolean => {
-  const normalized = normalise(alias);
-  return existingAliases.some((a) => normalise(a) === normalized);
+export const isVariantConflict = (variant: string, existingVariants: string[]): boolean => {
+  const normalized = normalise(variant);
+  return existingVariants.some((a) => normalise(a) === normalized);
 };
 
 export const hasWorkspaceConflict = (
   value: string,
   existingNames: string[],
-  existingAliases: string[],
-): boolean => isNameConflict(value, existingNames) || isAliasConflict(value, existingAliases);
+  existingVariants: string[],
+): boolean => isNameConflict(value, existingNames) || isVariantConflict(value, existingVariants);

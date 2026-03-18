@@ -1,7 +1,7 @@
 import { aiClient } from '../../../lib/ai';
 import { AI_CONFIDENCE } from '../../../lib/ai/types';
 
-type Candidate = { id: string; name: string; aliases: string[] };
+type Candidate = { id: string; name: string; variants: string[] };
 
 export const findMatchingIngredient = async (
   name: string,
@@ -15,8 +15,8 @@ export const findMatchingIngredient = async (
     if (c.name.toLowerCase() === normalized) {
       return { ingredientId: c.id, matchedName: c.name };
     }
-    for (const alias of c.aliases) {
-      if (alias.toLowerCase() === normalized) {
+    for (const variant of c.variants) {
+      if (variant.toLowerCase() === normalized) {
         return { ingredientId: c.id, matchedName: c.name };
       }
     }

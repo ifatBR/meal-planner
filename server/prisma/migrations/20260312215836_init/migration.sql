@@ -143,13 +143,13 @@ CREATE TABLE "ingredients" (
 );
 
 -- CreateTable
-CREATE TABLE "ingredient_aliases" (
+CREATE TABLE "ingredient_variants" (
     "id" TEXT NOT NULL,
-    "alias" TEXT NOT NULL,
+    "variant" TEXT NOT NULL,
     "ingredient_id" TEXT NOT NULL,
     "workspace_id" TEXT NOT NULL,
 
-    CONSTRAINT "ingredient_aliases_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "ingredient_variants_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -263,7 +263,7 @@ CREATE UNIQUE INDEX "units_name_key" ON "units"("name");
 CREATE UNIQUE INDEX "ingredients_workspace_id_name_key" ON "ingredients"("workspace_id", "name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ingredient_aliases_workspace_id_alias_key" ON "ingredient_aliases"("workspace_id", "alias");
+CREATE UNIQUE INDEX "ingredient_variants_workspace_id_variant_key" ON "ingredient_variants"("workspace_id", "variant");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "schedules_workspace_id_name_key" ON "schedules"("workspace_id", "name");
@@ -338,10 +338,10 @@ ALTER TABLE "recipe_meal_types" ADD CONSTRAINT "recipe_meal_types_meal_type_id_f
 ALTER TABLE "ingredients" ADD CONSTRAINT "ingredients_workspace_id_fkey" FOREIGN KEY ("workspace_id") REFERENCES "workspaces"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ingredient_aliases" ADD CONSTRAINT "ingredient_aliases_ingredient_id_fkey" FOREIGN KEY ("ingredient_id") REFERENCES "ingredients"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "ingredient_variants" ADD CONSTRAINT "ingredient_variants_ingredient_id_fkey" FOREIGN KEY ("ingredient_id") REFERENCES "ingredients"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ingredient_aliases" ADD CONSTRAINT "ingredient_aliases_workspace_id_fkey" FOREIGN KEY ("workspace_id") REFERENCES "workspaces"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "ingredient_variants" ADD CONSTRAINT "ingredient_variants_workspace_id_fkey" FOREIGN KEY ("workspace_id") REFERENCES "workspaces"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "schedules" ADD CONSTRAINT "schedules_workspace_id_fkey" FOREIGN KEY ("workspace_id") REFERENCES "workspaces"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
