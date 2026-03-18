@@ -49,6 +49,9 @@ export const fetchIngredientById = async (
   return ingredient;
 };
 
+//searches if input ingredient name exsists as main ingredient or as variant
+//if not- uses ai to find a matching existing ingredient, and creates a variant for it.
+//Else returns match:false
 export const matchIngredient = async (prisma: PrismaClient, name: string, workspaceId: string) => {
   const candidates = await getAllIngredientNamesAndVariants(prisma, workspaceId);
   const result = await findMatchingIngredient(name, candidates);
@@ -64,7 +67,12 @@ export const matchIngredient = async (prisma: PrismaClient, name: string, worksp
 
   if (normalizedInput !== normalizedIngName && !existingVariants.includes(normalizedInput)) {
     try {
-      await createVariant(prisma, { ingredientId: ingredient.id, variant: name }, workspaceId);
+      const newVariant = await createVariant(
+        prisma,
+        { ingredientId: ingredient.id, variant: name },
+        workspaceId,
+      );
+      ingredient.ingredient_variants.push({ id: newVariant.id, variant: newVariant.variant });
     } catch (err) {
       if (isP2002(err)) throw conflictError();
       throw err;
