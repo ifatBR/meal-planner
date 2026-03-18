@@ -14,13 +14,7 @@ import {
 } from './ingredients.repository';
 import { hasWorkspaceConflict, normalise } from './domain/ingredients.rules';
 import { findMatchingIngredient } from './domain/ingredients.algorithms';
-import { notFoundError, conflictError } from '../../utils/errors';
-
-const isP2002 = (err: unknown) =>
-  typeof err === 'object' &&
-  err !== null &&
-  'code' in err &&
-  (err as { code: string }).code === 'P2002';
+import { notFoundError, conflictError, isP2002 } from '../../utils/errors';
 
 export const listIngredients = async (
   prisma: PrismaClient,

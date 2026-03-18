@@ -45,3 +45,9 @@ export const internalError = makeError(
   ERROR_MESSAGES.INTERNAL_ERROR,
   HTTP_STATUS.INTERNAL_ERROR,
 );
+
+export const isP2002 = (err: unknown) =>
+  typeof err === 'object' &&
+  err !== null &&
+  'code' in err &&
+  (err as { code: string }).code === 'P2002';
