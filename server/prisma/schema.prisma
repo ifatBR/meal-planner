@@ -100,29 +100,13 @@ model MealType {
   workspace_id String   @db.Uuid
 
   workspace                  Workspace                @relation("MealTypeWorkspace", fields: [workspace_id], references: [id])
-  meal_type_dish_constraints MealTypeDishConstraint[] @relation("MealTypeDishConstraints")
   recipe_meal_types          RecipeMealType[]         @relation("RecipeMealTypes")
   schedule_meals             ScheduleMeal[]           @relation("ScheduleMeals")
   blocked_meals              BlockedMeal[]            @relation("BlockedMeals")
+  meal_slots                 MealSlot[]               @relation("MealTypeMealSlots")
 
   @@unique([workspace_id, name])
   @@map("meal_types")
-}
-
-model MealTypeDishConstraint {
-  id           String @id @default(uuid()) @db.Uuid
-  meal_type_id String @db.Uuid
-  dish_type_id String @db.Uuid
-  amount       Int
-  day_of_week  Int? /// 0-6 (0 = Sunday), null = applies to all days
-  order        Int
-
-  meal_type MealType @relation("MealTypeDishConstraints", fields: [meal_type_id], references: [id])
-  dish_type DishType @relation("MealTypeDishConstraints", fields: [dish_type_id], references: [id])
-
-  @@unique([meal_type_id, dish_type_id])
-  @@unique([meal_type_id, day_of_week, order])
-  @@map("meal_type_dish_constraints")
 }
 
 model DishType {
@@ -133,24 +117,63 @@ model DishType {
   workspace_id String   @db.Uuid
 
   workspace                  Workspace                @relation("DishTypeWorkspace", fields: [workspace_id], references: [id])
-  meal_type_dish_constraints MealTypeDishConstraint[] @relation("MealTypeDishConstraints")
-  recipes                    Recipe[]                 @relation("RecipeDishType")
+  recipe_dish_types          RecipeDishType[]         @relation("RecipeDishTypes")
   meal_recipes               MealRecipe[]             @relation("MealRecipeDishType")
+  dish_allocations           DishAllocation[]         @relation("DishTypeDishAllocations")
 
   @@unique([workspace_id, name])
   @@map("dish_types")
+}
+
+model WeekDaysLayout {
+  id          String   @id @default(uuid()) @db.Uuid
+  days        Int[]
+  schedule_id String   @db.Uuid
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  schedule   Schedule   @relation("ScheduleWeekDaysLayouts", fields: [schedule_id], references: [id])
+  meal_slots MealSlot[] @relation("WeekDaysLayoutMealSlots")
+
+  @@map("week_days_layouts")
+}
+
+model MealSlot {
+  id                  String @id @default(uuid()) @db.Uuid
+  week_days_layout_id String @db.Uuid
+  meal_type_id        String @db.Uuid
+  order               Int
+
+  week_days_layout WeekDaysLayout   @relation("WeekDaysLayoutMealSlots", fields: [week_days_layout_id], references: [id])
+  meal_type        MealType         @relation("MealTypeMealSlots", fields: [meal_type_id], references: [id])
+  dish_allocations DishAllocation[] @relation("MealSlotDishAllocations")
+
+  @@unique([week_days_layout_id, order])
+  @@map("meal_slots")
+}
+
+model DishAllocation {
+  id           String @id @default(uuid()) @db.Uuid
+  meal_slot_id String @db.Uuid
+  dish_type_id String @db.Uuid
+  amount       Int
+
+  meal_slot MealSlot @relation("MealSlotDishAllocations", fields: [meal_slot_id], references: [id])
+  dish_type DishType @relation("DishTypeDishAllocations", fields: [dish_type_id], references: [id])
+
+  @@unique([meal_slot_id, dish_type_id])
+  @@map("dish_allocations")
 }
 
 model Recipe {
   id           String   @id @default(uuid()) @db.Uuid
   name         String
   instructions String?
-  dish_type_id String   @db.Uuid
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
   workspace_id String   @db.Uuid
 
-  dish_type          DishType           @relation("RecipeDishType", fields: [dish_type_id], references: [id])
+  recipe_dish_types  RecipeDishType[]   @relation("RecipeDishTypes")
   workspace          Workspace          @relation("RecipeWorkspace", fields: [workspace_id], references: [id])
   recipe_ingredients RecipeIngredient[] @relation("RecipeIngredients")
   recipe_meal_types  RecipeMealType[]   @relation("RecipeMealTypes")
@@ -158,6 +181,28 @@ model Recipe {
 
   @@unique([workspace_id, name])
   @@map("recipes")
+}
+
+model RecipeMealType {
+  recipe_id    String @db.Uuid
+  meal_type_id String @db.Uuid
+
+  recipe Recipe @relation("RecipeMealTypes", fields: [recipe_id], references: [id], onDelete: Cascade)
+  meal_type MealType @relation("RecipeMealTypes", fields: [meal_type_id], references: [id])
+
+  @@id([recipe_id, meal_type_id])
+  @@map("recipe_meal_types")
+}
+
+model RecipeDishType {
+  recipe_id    String @db.Uuid
+  dish_type_id String @db.Uuid
+
+  recipe Recipe @relation("RecipeDishTypes", fields: [recipe_id], references: [id], onDelete: Cascade)
+  dish_type DishType @relation("RecipeDishTypes", fields: [dish_type_id], references: [id])
+
+  @@id([recipe_id, dish_type_id])
+  @@map("recipe_dish_types")
 }
 
 model RecipeIngredient {
@@ -169,7 +214,7 @@ model RecipeIngredient {
   amount        Float?
   unit_id       String? @db.Uuid
 
-  recipe     Recipe     @relation("RecipeIngredients", fields: [recipe_id], references: [id])
+  recipe Recipe @relation("RecipeIngredients", fields: [recipe_id], references: [id], onDelete: Cascade)
   ingredient Ingredient @relation("RecipeIngredients", fields: [ingredient_id], references: [id])
   unit       Unit?      @relation("RecipeIngredientUnit", fields: [unit_id], references: [id])
 
@@ -184,17 +229,6 @@ model Unit {
   recipe_ingredients RecipeIngredient[] @relation("RecipeIngredientUnit")
 
   @@map("units")
-}
-
-model RecipeMealType {
-  recipe_id    String @db.Uuid
-  meal_type_id String @db.Uuid
-
-  recipe    Recipe   @relation("RecipeMealTypes", fields: [recipe_id], references: [id])
-  meal_type MealType @relation("RecipeMealTypes", fields: [meal_type_id], references: [id])
-
-  @@id([recipe_id, meal_type_id])
-  @@map("recipe_meal_types")
 }
 
 model Ingredient {
@@ -238,6 +272,7 @@ model Schedule {
   workspace           Workspace          @relation("ScheduleWorkspace", fields: [workspace_id], references: [id])
   schedule_days       ScheduleDay[]      @relation("ScheduleDays")
   generation_settings GenerationSetting? @relation("GenerationSettings")
+  week_days_layouts WeekDaysLayout[] @relation("ScheduleWeekDaysLayouts")
 
   @@unique([workspace_id, name])
   @@map("schedules")

@@ -10,11 +10,7 @@ export const listDishTypes = async (prisma: PrismaClient, workspaceId: string) =
   });
 };
 
-export const getDishTypeById = async (
-  prisma: PrismaClient,
-  id: string,
-  workspaceId: string,
-) => {
+export const getDishTypeById = async (prisma: PrismaClient, id: string, workspaceId: string) => {
   return prisma.dishType.findFirst({
     where: { id, workspace_id: workspaceId },
     ...dishTypeSelect,
@@ -32,11 +28,7 @@ export const createDishType = async (
   });
 };
 
-export const updateDishType = async (
-  prisma: PrismaClient,
-  id: string,
-  data: { name: string },
-) => {
+export const updateDishType = async (prisma: PrismaClient, id: string, data: { name: string }) => {
   return prisma.dishType.update({
     where: { id },
     data: { name: data.name },
@@ -51,7 +43,7 @@ export const deleteDishType = async (prisma: PrismaClient, id: string) => {
 export const countDishTypeReferences = async (prisma: PrismaClient, id: string) => {
   const [recipeCount, constraintCount] = await Promise.all([
     prisma.recipe.count({ where: { dish_type_id: id } }),
-    prisma.mealTypeDishConstraint.count({ where: { dish_type_id: id } }),
+    prisma.dishAllocation.count({ where: { dish_type_id: id } }),
   ]);
   return { recipeCount, constraintCount };
 };

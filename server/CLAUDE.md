@@ -55,7 +55,7 @@ app/server/src/
 │   ├── auth.ts                     ← decorates fastify.authenticate + fastify.requirePermission, needs fp
 │   └── cookie.ts                   ← @fastify/cookie, registered in auth module setup
 ├── utils/
-│   └── errors.ts                   ← error factory helpers, import from here in all modules
+│   └── errors.ts                   ← error factory helpers + isP2002 helper, import from here in all modules
 ├── lib/
 │   └── ai/
 │       ├── types.ts                ← AIClient interface + AIProvider type
@@ -79,10 +79,10 @@ app/server/src/
 
 - **routes/api.ts** → Registers the `/api/v1` prefix and all module route plugins. Never add business logic here.
 - **modules/\*/\*.routes.ts** → Registers routes relative to the module prefix. Validates input with Zod, calls service, returns response. No business logic.
-- **modules/\*/\*.service.ts** → Orchestrates business logic. Calls domain functions and repositories. Throws errors when rules are violated.
+- **modules/\*/\*.service.ts** → Orchestrates business logic. Calls domain functions and repositories. Throws errors when rules are violated. Catches Prisma errors (e.g. P2002) and converts them to domain errors.
 - **modules/\*/domain/\*.rules.ts** → Pure business rule functions (validation, constraints). No DB access, no HTTP concerns.
 - **modules/\*/domain/\*.algorithms.ts** → Complex calculations and algorithms (e.g. schedule generation). No DB access, no HTTP concerns.
-- **modules/\*/\*.repository.ts** → All Prisma queries. Always scope by `workspace_id`. Never throw HTTP errors — return data or null.
+- **modules/\*/\*.repository.ts** → All Prisma queries. Always scope by `workspace_id`. Never throw HTTP errors — return data or null. Never call `isP2002` or throw domain errors.
 - **modules/\*/tests/\*.routes.test.ts** → Route tests — mock services, use `fastify.inject()`, test HTTP layer (status codes, response shape, auth enforcement).
 - **modules/\*/tests/\*.service.test.ts** → Service tests — mock repositories, test business logic and error handling.
 - **modules/\*/tests/\*.repository.test.ts** → Repository tests — use real test DB, truncate tables before each test.
@@ -91,6 +91,28 @@ app/server/src/
 **Domain folder:** Only create the `domain/` subfolder when the module has substantial business logic. For 1-2 simple rule checks, a single `<module>.domain.ts` at the module root is fine.
 
 ### All functions are plain functions — no classes.
+
+### onDelete: Cascade vs. block
+
+- Use `onDelete: Cascade` on child join table relations that have no meaning without their parent (e.g. `RecipeIngredient`, `RecipeDishType`, `RecipeMealType` → `Recipe`). These rows are owned by the parent and should be cleaned up automatically on delete.
+- Block deletion with a 409 when the record is referenced by a shared entity that exists independently (e.g. block `Recipe` deletion if referenced by `MealRecipe`, block `Ingredient` deletion if referenced by `RecipeIngredient`). The 409 response must include enough context for the frontend to surface a meaningful message — see conflict response shape below.
+
+### Conflict response shape (409)
+
+When blocking a delete or update due to schedule usage, return a structured 409:
+
+```json
+{
+  "statusCode": 409,
+  "error": "recipe_in_use",
+  "message": "Human-readable explanation of the conflict.",
+  "affected_schedules": [
+    { "scheduleId": "string", "scheduleName": "string", "dates": ["YYYY-MM-DD"] }
+  ]
+}
+```
+
+Use a specific `error` code per conflict type (e.g. `recipe_in_use`, `recipe_dish_type_conflict`, `recipe_meal_type_conflict`). Always include `affected_schedules` when the conflict involves schedule data.
 
 ---
 
@@ -107,6 +129,7 @@ async function apiRoutes(fastify: FastifyInstance) {
   fastify.register(recipeRoutes, { prefix: '/recipes' });
   fastify.register(dishTypeRoutes, { prefix: '/dish-types' });
   fastify.register(mealTypeRoutes, { prefix: '/meal-types' });
+  fastify.register(layoutRoutes, { prefix: '/layouts' });
   fastify.register(scheduleRoutes, { prefix: '/schedules' });
   fastify.register(scheduleMealRoutes, { prefix: '/schedule-meals' });
   fastify.register(authRoutes, { prefix: '/auth' });
@@ -333,6 +356,10 @@ Always use `PERMISSIONS` constants — never pass raw domain/key strings to `req
 Always read `workspaceId` from `request.user.workspaceId` and pass it to the repository.
 Never trust a `workspaceId` from the request body or params — always use the one from the JWT.
 
+**Exception:** `WeekDaysLayout` and `MealSlot` are scoped through their `schedule_id` relation, not directly by `workspace_id`. For layout endpoints, scope by `layoutId` from params and verify ownership through the schedule → workspace chain in the service.
+
+**Exception:** `Unit` is a global table with no `workspace_id`. Never filter `Unit` queries by workspace. See Unit table section below.
+
 ---
 
 ## AI Provider
@@ -419,9 +446,12 @@ await seedWorkspaceIngredients(prisma, workspace.id);
 ```json
 [
   { "name": "eggplant", "category": "vegetables", "variants": ["aubergine", "brinjal"] },
+  { "name": "chicken", "category": "proteins", "variants": ["chicken breast", "chicken thigh", "chicken wings", "whole chicken"] },
   { "name": "cilantro", "category": "herbs", "variants": ["coriander", "dhania"] }
 ]
 ```
+
+The `variants` array covers both what were previously called "aliases" (different names for the same thing, e.g. aubergine) and ingredient-family variants (e.g. chicken cuts). Both are stored as `IngredientVariant` records and treated identically for gap calculation purposes.
 
 Each workspace owns its ingredients fully — they are copied from the global list on creation and can be edited or deleted freely. There is no shared global ingredient table at runtime.
 
@@ -438,6 +468,9 @@ packages/types/
 ├── package.json        ← name: "@app/types"
 ├── roles.ts            ← ROLES const + Role type (source of truth)
 ├── ingredients.ts
+├── dish-types.ts
+├── meal-types.ts
+├── layouts.ts
 ├── recipes.ts
 ├── auth.ts
 └── ... (one file per module)
@@ -513,6 +546,7 @@ Examples:
 return { data: ingredient };
 return { data: ingredients };
 return { data: { id } };
+return { data: { success: true } };
 ```
 
 ---
@@ -548,6 +582,7 @@ import {
   ruleViolationError,
   invalidRequestError,
   internalError,
+  isP2002,
 } from '../../utils/errors';
 
 throw notFoundError();
@@ -559,6 +594,30 @@ throw invalidRequestError();
 throw internalError();
 ```
 
+### isP2002
+
+`isP2002` is a utility exported from `utils/errors.ts` for detecting Prisma unique constraint violations. Never define it inline in a service — always import it:
+
+```ts
+// utils/errors.ts
+export const isP2002 = (err: unknown): boolean =>
+  typeof err === 'object' &&
+  err !== null &&
+  'code' in err &&
+  (err as { code: string }).code === 'P2002';
+```
+
+Use it in services to catch unique constraint violations and rethrow as 409:
+
+```ts
+try {
+  return await createDishType(prisma, data, workspaceId);
+} catch (err) {
+  if (isP2002(err)) throw conflictError();
+  throw err;
+}
+```
+
 ### 404 behavior
 
 Repositories return `null` for not-found; services must check and throw:
@@ -568,22 +627,9 @@ const ingredient = await getIngredientById(prisma, id, workspaceId);
 if (!ingredient) throw notFoundError();
 ```
 
-### Prisma P2002 unique constraint violations
+### Repository error responsibility
 
-Catch in the service layer and rethrow as 409:
-
-```ts
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-
-try {
-  return await createIngredient(prisma, data, workspaceId);
-} catch (error) {
-  if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
-    throw conflictError();
-  }
-  throw error;
-}
-```
+Repositories never throw domain errors and never call `isP2002`. They return data or `null` and let Prisma errors bubble up. Only the service layer catches and converts errors.
 
 ---
 
@@ -609,7 +655,7 @@ const prisma = new PrismaClient({
 });
 ```
 
-This applies everywhere `PrismaClient` is instantiated, including repository tests (use `DATABASE_URL` there).
+This applies everywhere `PrismaClient` is instantiated, including repository tests.
 
 ### Repositories
 
@@ -618,7 +664,6 @@ Repositories receive `prisma` as their first parameter:
 ```ts
 // modules/ingredients/ingredients.repository.ts
 import { PrismaClient } from '@prisma/client';
-import { CreateIngredientInput } from '@app/types/ingredients';
 
 export const getIngredientById = async (prisma: PrismaClient, id: string, workspaceId: string) => {
   return prisma.ingredient.findFirst({
@@ -698,7 +743,8 @@ export default ingredientRoutes;
 
 ## Module List
 
-Current modules: `auth`, `ingredients`, `dish-types`, `meal-types`, `recipes`, `schedules`, `schedule-meals`
+Completed or generated: `auth`, `ingredients`, `dish-types`, `meal-types`, `layouts`
+Pending: `recipes`, `schedules`, `schedule-meals`, `users`, `permissions`
 
 ---
 
@@ -706,32 +752,59 @@ Current modules: `auth`, `ingredients`, `dish-types`, `meal-types`, `recipes`, `
 
 Key models and their workspace-scoped fields:
 
-| Model                    | Unique constraint                                                    | Notes                                                                                                                                                  |
-| ------------------------ | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `Ingredient`             | `(workspace_id, name)`                                               | Has `IngredientVariant` children. `category String?` — null treated as `other` on the FE.                                                              |
-| `IngredientVariant`      | `(workspace_id, variant)`                                            | Scoped to workspace. Created automatically on ingredient match. Used for search and gap calculation.                                                   |
-| `DishType`               | `(workspace_id, name)`                                               |                                                                                                                                                        |
-| `MealType`               | `(workspace_id, name)`                                               | Has `MealTypeDishConstraint` children. Has `order Int` field for display ordering.                                                                     |
-| `MealTypeDishConstraint` | `(meal_type_id, dish_type_id)`, `(meal_type_id, day_of_week, order)` | `day_of_week` is `Int?` (0–6, 0 = Sunday), `null` = applies to all days. `order` defines display order of dish constraints within a meal type per day. |
-| `Recipe`                 | `(workspace_id, name)`                                               | Has `RecipeIngredient`, `RecipeMealType`                                                                                                               |
-| `RecipeIngredient`       | `(recipe_id, ingredient_id)`                                         | `is_main` must be exactly 1 per recipe (domain rule). `display_name String?` stores what the user typed — falls back to ingredient name if null.       |
-| `Schedule`               | `(workspace_id, name)`                                               | Has `ScheduleDay`, `GenerationSetting`                                                                                                                 |
-| `ScheduleMeal`           | `(schedule_day_id, meal_type_id)`                                    | Has `MealRecipe` children                                                                                                                              |
-| `WorkspaceUser`          | `(user_id, workspace_id)`                                            | Join table with role                                                                                                                                   |
+| Model               | Unique constraint                 | Notes                                                                                                                                                                                                                                                                    |
+| ------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Ingredient`        | `(workspace_id, name)`            | Has `IngredientVariant` children. `category String?` — null treated as `other` on the FE. Block delete if referenced by any `RecipeIngredient`.                                                                                                                         |
+| `IngredientVariant` | `(workspace_id, variant)`         | Scoped to workspace. Field is `variant` (not `alias`). Relation on `Ingredient` is `ingredient_variants`. Covers both name variants (aubergine = eggplant) and ingredient-family variants (chicken breast → chicken). Both treated identically for gap calculation.      |
+| `DishType`          | `(workspace_id, name)`            |                                                                                                                                                                                                                                                                          |
+| `MealType`          | `(workspace_id, name)`            | Simple lookup — name only. No order field. No dish constraints directly on this model.                                                                                                                                                                                   |
+| `WeekDaysLayout`    | none                              | Belongs to a `Schedule` (not workspace directly). `days Int[]` — array of day-of-week ints (0=Sunday, 6=Saturday) covered by this layout.                                                                                                                               |
+| `MealSlot`          | `(week_days_layout_id, order)`    | Belongs to `WeekDaysLayout`. `order` derived from array index when creating/reordering. Linked to a `MealType`.                                                                                                                                                          |
+| `DishAllocation`    | `(meal_slot_id, dish_type_id)`    | Belongs to `MealSlot`. `amount Int` — how many of this dish type are required in this slot.                                                                                                                                                                              |
+| `Recipe`            | `(workspace_id, name)`            | Has `RecipeIngredient`, `RecipeMealType`, `RecipeDishType`. Must have at least one dish type and at least one meal type. Block delete if referenced by any `MealRecipe` (return 409 with affected schedule names and dates). Cascade deletes `RecipeIngredient`, `RecipeDishType`, `RecipeMealType` on delete. |
+| `RecipeIngredient`  | `(recipe_id, ingredient_id)`      | `is_main` must be exactly 1 per recipe — enforced in service, throw `ruleViolationError()` if violated. `display_name String?` stores the variant name the user typed — falls back to `Ingredient.name` on read if null. `onDelete: Cascade` from `Recipe`.            |
+| `RecipeDishType`    | `(recipe_id, dish_type_id)`       | Join table. `onDelete: Cascade` from `Recipe`.                                                                                                                                                                                                                           |
+| `RecipeMealType`    | `(recipe_id, meal_type_id)`       | Join table. `onDelete: Cascade` from `Recipe`.                                                                                                                                                                                                                           |
+| `Unit`              | `(name)`                          | Global table — no `workspace_id`. Never scope `Unit` queries by workspace. Seeded once globally, never created or deleted via the API.                                                                                                                                   |
+| `Schedule`          | `(workspace_id, name)`            | Has `ScheduleDay`, `GenerationSetting`, `WeekDaysLayout[]`                                                                                                                                                                                                               |
+| `ScheduleMeal`      | `(schedule_day_id, meal_type_id)` | Has `MealRecipe` children                                                                                                                                                                                                                                                |
+| `WorkspaceUser`     | `(user_id, workspace_id)`         | Join table with role                                                                                                                                                                                                                                                     |
+
+### Removed models
+
+`MealTypeDishConstraint` has been removed entirely and replaced by `WeekDaysLayout` + `MealSlot` + `DishAllocation`.
+
+### WeekDaysLayout / MealSlot / DishAllocation
+
+These three models define the week structure for a schedule:
+
+- A schedule has multiple `WeekDaysLayout` records — one per "days range" (e.g. one for Sun–Thu, one for Fri, one for Sat).
+- Each `WeekDaysLayout` has multiple `MealSlot` records — one per meal type that appears on those days, ordered by `order`.
+- Each `MealSlot` has multiple `DishAllocation` records — one per dish type required, with an `amount`.
+- Week layout is created/updated as part of schedule generation — not via standalone CRUD endpoints.
+- The only standalone layout endpoint is `PATCH /api/v1/layouts/:layoutId/slots/reorder` — reorders meal slots by accepting the full array of slot IDs in new order, derives `order` from index, updates all in a transaction. This endpoint uses `PERMISSIONS.SCHEDULES.UPDATE` — there is no separate layouts permission.
+- A day belongs to exactly one `WeekDaysLayout` per schedule — enforced in the service layer (not DB level).
 
 ### day_of_week convention
 
 - `0` = Sunday, `6` = Saturday
-- `null` = applies to all days of the week
 - Week start day will be a configurable workspace-level setting in a future version — do not hardcode Sunday as week start in any UI or generation logic
 
 ### RecipeIngredient.display_name
 
-When a user adds an ingredient to a recipe by typing an variant (e.g. "aubergine"), store the typed name in `display_name` so the recipe shows what the user typed. The algorithm uses `ingredient_id` (pointing to the canonical ingredient) for gap calculations. If `display_name` is null, fall back to the parent ingredient name for display.
+When a user adds an ingredient to a recipe, they may type a variant name (e.g. "aubergine"). The client sends a `variantId` if the ingredient was matched via a variant. The service validates the variant belongs to the given `ingredient_id` and workspace, then stores the variant's `variant` field as `display_name`. If no `variantId` is provided, `display_name` is stored as `null`. On read, resolve as: `display_name ?? ingredient.name`. The algorithm always uses `ingredient_id` for gap calculations — never `display_name`.
+
+### Unit table
+
+`Unit` is a global lookup table with no `workspace_id`. It is not scoped per workspace. Units are seeded once globally and are never created or deleted via the API. Repository queries against `Unit` must NOT filter by `workspace_id`.
 
 ### Ingredient.category
 
 `category` is a nullable string on the `Ingredient` model. It is set from `prisma/global-ingredients.json` during workspace seeding. The FE treats `null` as `other`. Valid categories: `vegetables`, `fruits`, `proteins`, `dairy`, `grains`, `legumes`, `herbs`, `spices`, `oils-fats`, `nuts-seeds`, `condiments`, `sweeteners`, `baking-confectionery`, `dairy-alternatives`, `alcohol`, `other`.
+
+### Gap calculation
+
+For gap rules, resolve each recipe's main ingredient to its parent ingredient via `IngredientVariant` before comparing. If the ingredient has no variants pointing to it, compare against itself. This means chicken breast and chicken thigh both resolve to chicken for gap purposes.
 
 ---
 
@@ -765,7 +838,6 @@ vi.mock('../ingredients.service');
 const buildApp = async () => {
   const app = Fastify();
 
-  // mock prisma — no DB connection needed in route tests
   app.decorate('prisma', {
     permission: {
       findFirst: vi.fn().mockResolvedValue({ id: 'perm-1', domain: 'ingredients', key: 'create' }),
@@ -784,12 +856,8 @@ const signToken = (app: ReturnType<typeof Fastify>) =>
 describe('GET /ingredients', () => {
   let app: Awaited<ReturnType<typeof buildApp>>;
 
-  beforeEach(async () => {
-    app = await buildApp();
-  });
-  afterEach(async () => {
-    await app.close();
-  });
+  beforeEach(async () => { app = await buildApp(); });
+  afterEach(async () => { await app.close(); });
 
   it('returns 200 with data', async () => {
     vi.mocked(service.listIngredients).mockResolvedValue({
@@ -830,10 +898,7 @@ vi.mock('../ingredients.repository');
 describe('fetchIngredientById', () => {
   it('returns ingredient when found', async () => {
     vi.mocked(repo.getIngredientById).mockResolvedValue({
-      id: '1',
-      name: 'Salt',
-      category: 'spices',
-      workspace_id: 'ws-1',
+      id: '1', name: 'Salt', category: 'spices', workspace_id: 'ws-1',
     });
     const result = await fetchIngredientById({} as any, '1', 'ws-1');
     expect(result.name).toBe('Salt');
@@ -858,13 +923,13 @@ DATABASE_URL="postgresql://user@localhost:5432/meal_planner_test"
 ```
 
 3. Add `.env.test` to `.gitignore`
-4. Run migrations against the test DB once:
+4. Run migrations against the test DB:
 
 ```bash
 DATABASE_URL=postgresql://user@localhost:5432/meal_planner_test npx prisma migrate deploy
 ```
 
-5. Run seed against the test DB so `requirePermission` works in route tests:
+5. Run seed against the test DB:
 
 ```bash
 DATABASE_URL=postgresql://user@localhost:5432/meal_planner_test npm run db:seed
@@ -879,25 +944,22 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env.test' });
 
 export default defineConfig({
-  test: {
-    environment: 'node',
-  },
+  test: { environment: 'node' },
 });
 ```
 
 ### Repository tests (`<module>.repository.test.ts`)
 
 - Use a real PostgreSQL test database (`DATABASE_URL` in `.env.test`)
-- Truncate relevant tables in `beforeEach` to keep tests isolated — each test starts with a clean slate
+- Truncate relevant tables in `beforeEach` — each test starts with a clean slate
 - Create prerequisite records (e.g. workspace) in `beforeAll`, not `beforeEach`
-- Truncate in dependency order — children before parents (e.g. variants before ingredients)
-- Test: correct Prisma queries, workspace scoping, unique constraint behaviour
+- Truncate in dependency order — children before parents
 
 ```ts
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { getIngredientById, createIngredient } from '../ingredients.repository';
+import { getIngredientById } from '../ingredients.repository';
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
@@ -917,25 +979,6 @@ beforeEach(async () => {
   await prisma.ingredientVariant.deleteMany({ where: { workspace_id: WS_ID } });
   await prisma.ingredient.deleteMany({ where: { workspace_id: WS_ID } });
 });
-
-describe('getIngredientById', () => {
-  it('returns ingredient scoped to workspace', async () => {
-    const created = await prisma.ingredient.create({
-      data: { name: 'Salt', category: 'spices', workspace_id: WS_ID },
-    });
-    const result = await getIngredientById(prisma, created.id, WS_ID);
-    expect(result?.name).toBe('Salt');
-    expect(result?.category).toBe('spices');
-  });
-
-  it('does not return ingredient from different workspace', async () => {
-    const created = await prisma.ingredient.create({
-      data: { name: 'Salt', workspace_id: WS_ID },
-    });
-    const result = await getIngredientById(prisma, created.id, 'ws-2');
-    expect(result).toBeNull();
-  });
-});
 ```
 
 ---
@@ -944,7 +987,6 @@ describe('getIngredientById', () => {
 
 - Pure unit tests — no mocks, no DB, no Fastify
 - Only create this file if the module has a `domain/` folder or `.domain.ts` file
-- Test every rule and edge case exhaustively — these are the cheapest tests to write
 
 ---
 
@@ -952,17 +994,14 @@ describe('getIngredientById', () => {
 
 When asked to generate a module, always produce all of these files:
 
-1. `packages/types/<module>.ts` — Zod schemas + inferred TypeScript types (shared with FE). One schema per endpoint, never reuse across endpoints.
-2. `modules/<module>/<module>.repository.ts` — Prisma queries, always scoped by workspaceId
-3. `modules/<module>/<module>.service.ts` — Business logic, calls repository + domain, handles P2002
-4. `modules/<module>/<module>.routes.ts` — Fastify route plugin, validates with Zod, calls service
-5. `modules/<module>/tests/<module>.routes.test.ts` — Route tests with mocked services and mocked prisma (no DB)
-6. `modules/<module>/tests/<module>.service.test.ts` — Service tests with mocked repositories
-7. `modules/<module>/tests/<module>.repository.test.ts` — Repository tests against test DB
-8. If the module has business rules or algorithms, create either:
-   - `modules/<module>/<module>.domain.ts` — for simple/single rule checks
-   - `modules/<module>/domain/<module>.rules.ts` and/or `modules/<module>/domain/<module>.algorithms.ts` — for substantial domain logic
-9. If domain logic exists: `modules/<module>/tests/<module>.domain.test.ts` — pure unit tests
+1. `packages/types/<module>.ts` — Zod schemas + inferred TypeScript types. One schema per endpoint, never reuse.
+2. `modules/<module>/<module>.repository.ts` — Prisma queries, scoped by workspaceId, never throw domain errors.
+3. `modules/<module>/<module>.service.ts` — Business logic, uses `isP2002` from `utils/errors.ts`.
+4. `modules/<module>/<module>.routes.ts` — Fastify route plugin, validates with Zod, calls service.
+5. `modules/<module>/tests/<module>.routes.test.ts` — Route tests with mocked services and mocked prisma.
+6. `modules/<module>/tests/<module>.service.test.ts` — Service tests with mocked repositories.
+7. `modules/<module>/tests/<module>.repository.test.ts` — Repository tests against test DB.
+8. If domain logic exists: domain file(s) + `modules/<module>/tests/<module>.domain.test.ts`.
 
 Then add the module to `routes/api.ts` with its prefix.
 
