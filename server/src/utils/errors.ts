@@ -16,11 +16,12 @@ export class ScheduleConflictError extends Error {
 const makeError = (code: string, message: string, status: number) => () =>
   new (createError(code, message, status))();
 
-export const notFoundError = makeError(
-  ERROR_CODES.NOT_FOUND,
-  ERROR_MESSAGES.NOT_FOUND,
-  HTTP_STATUS.NOT_FOUND,
-);
+export const notFoundError = (entity?: string) =>
+  makeError(
+    ERROR_CODES.NOT_FOUND,
+    entity ? `${entity} not found` : ERROR_MESSAGES.NOT_FOUND,
+    HTTP_STATUS.NOT_FOUND,
+  )();
 
 export const unAuthorizedError = makeError(
   ERROR_CODES.UNAUTHORIZED,
@@ -34,23 +35,26 @@ export const forbiddenError = makeError(
   HTTP_STATUS.FORBIDDEN,
 );
 
-export const conflictError = makeError(
-  ERROR_CODES.CONFLICT,
-  ERROR_MESSAGES.CONFLICT,
-  HTTP_STATUS.CONFLICT,
-);
+export const conflictError = (entity?: string) =>
+  makeError(
+    ERROR_CODES.CONFLICT,
+    entity ? `${entity} already exists` : ERROR_MESSAGES.CONFLICT,
+    HTTP_STATUS.CONFLICT,
+  )();
 
-export const ruleViolationError = makeError(
-  ERROR_CODES.RULE_VIOLATION,
-  ERROR_MESSAGES.RULE_VIOLATION,
-  HTTP_STATUS.RULE_VIOLATION,
-);
+export const ruleViolationError = (message?: string) =>
+  makeError(
+    ERROR_CODES.RULE_VIOLATION,
+    message ?? ERROR_MESSAGES.RULE_VIOLATION,
+    HTTP_STATUS.RULE_VIOLATION,
+  )();
 
-export const invalidRequestError = makeError(
-  ERROR_CODES.INVALID_REQUEST,
-  ERROR_MESSAGES.INVALID_REQUEST,
-  HTTP_STATUS.INVALID_REQUEST,
-);
+export const invalidRequestError = (entity?: string, value?: string) =>
+  makeError(
+    ERROR_CODES.INVALID_REQUEST,
+    entity ? `Invalid ${entity}${value ? `: "${value}"` : ''}` : ERROR_MESSAGES.INVALID_REQUEST,
+    HTTP_STATUS.INVALID_REQUEST,
+  )();
 
 export const internalError = makeError(
   ERROR_CODES.INTERNAL_ERROR,

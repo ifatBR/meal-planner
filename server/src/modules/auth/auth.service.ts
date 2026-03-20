@@ -120,7 +120,7 @@ export const logoutAllSessions = async (prisma: PrismaClient, userId: string) =>
 export const getAuthenticatedUser = async (prisma: PrismaClient, userId: string) => {
   const user = await findUserById(prisma, userId);
   if (!user) {
-    throw notFoundError();
+    throw notFoundError('user');
   }
   return {
     id: user.id,

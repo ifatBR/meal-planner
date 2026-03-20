@@ -39,7 +39,7 @@ export const fetchIngredientById = async (
   workspaceId: string,
 ) => {
   const ingredient = await getIngredientById(prisma, id, workspaceId);
-  if (!ingredient) throw notFoundError();
+  if (!ingredient) throw notFoundError('ingredient');
   return ingredient;
 };
 
@@ -68,7 +68,7 @@ export const matchIngredient = async (prisma: PrismaClient, name: string, worksp
       );
       ingredient.ingredient_variants.push({ id: newVariant.id, variant: newVariant.variant });
     } catch (err) {
-      if (isP2002(err)) throw conflictError();
+      if (isP2002(err)) throw conflictError('variant');
       throw err;
     }
   }
@@ -85,12 +85,12 @@ export const createIngredient = async (
   const names = existing.map((e) => e.name);
   const variants = existing.flatMap((e) => e.variants);
 
-  if (hasWorkspaceConflict(data.name, names, variants)) throw conflictError();
+  if (hasWorkspaceConflict(data.name, names, variants)) throw conflictError('ingredient');
 
   try {
     return await createIngredientRepo(prisma, data, workspaceId);
   } catch (err) {
-    if (isP2002(err)) throw conflictError();
+    if (isP2002(err)) throw conflictError('ingredient');
     throw err;
   }
 };
@@ -102,25 +102,25 @@ export const updateIngredient = async (
   data: { name: string },
 ) => {
   const ingredient = await getIngredientById(prisma, id, workspaceId);
-  if (!ingredient) throw notFoundError();
+  if (!ingredient) throw notFoundError('ingredient');
 
   const existing = await getAllIngredientNamesAndVariants(prisma, workspaceId);
   const names = existing.filter((e) => e.id !== id).map((e) => e.name);
   const variants = existing.filter((e) => e.id !== id).flatMap((e) => e.variants);
 
-  if (hasWorkspaceConflict(data.name, names, variants)) throw conflictError();
+  if (hasWorkspaceConflict(data.name, names, variants)) throw conflictError('ingredient');
 
   try {
     return await updateIngredientRepo(prisma, id, workspaceId, data);
   } catch (err) {
-    if (isP2002(err)) throw conflictError();
+    if (isP2002(err)) throw conflictError('ingredient');
     throw err;
   }
 };
 
 export const deleteIngredient = async (prisma: PrismaClient, id: string, workspaceId: string) => {
   const ingredient = await getIngredientById(prisma, id, workspaceId);
-  if (!ingredient) throw notFoundError();
+  if (!ingredient) throw notFoundError('ingredient');
   await deleteIngredientRepo(prisma, id);
   return { id };
 };
@@ -132,18 +132,18 @@ export const addVariant = async (
   variant: string,
 ) => {
   const ingredient = await getIngredientById(prisma, ingredientId, workspaceId);
-  if (!ingredient) throw notFoundError();
+  if (!ingredient) throw notFoundError('ingredient');
 
   const existing = await getAllIngredientNamesAndVariants(prisma, workspaceId);
   const names = existing.map((e) => e.name);
   const variants = existing.flatMap((e) => e.variants);
 
-  if (hasWorkspaceConflict(variant, names, variants)) throw conflictError();
+  if (hasWorkspaceConflict(variant, names, variants)) throw conflictError('variant');
 
   try {
     return await createVariant(prisma, { ingredientId, variant }, workspaceId);
   } catch (err) {
-    if (isP2002(err)) throw conflictError();
+    if (isP2002(err)) throw conflictError('variant');
     throw err;
   }
 };
@@ -155,7 +155,7 @@ export const removeVariant = async (
   workspaceId: string,
 ) => {
   const variant = await getVariantById(prisma, variantId, workspaceId);
-  if (!variant || variant.ingredient_id !== ingredientId) throw notFoundError();
+  if (!variant || variant.ingredient_id !== ingredientId) throw notFoundError('variant');
   await deleteVariantRepo(prisma, variantId);
   return { id: variantId };
 };

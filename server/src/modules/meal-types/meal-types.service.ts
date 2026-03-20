@@ -21,7 +21,7 @@ export const createMealType = async (
   try {
     return await createMealTypeRepo(prisma, data, workspaceId);
   } catch (err) {
-    if (isP2002(err)) throw conflictError();
+    if (isP2002(err)) throw conflictError('meal type');
     throw err;
   }
 };
@@ -33,25 +33,25 @@ export const updateMealType = async (
   data: { name: string },
 ) => {
   const mealType = await getMealTypeById(prisma, id, workspaceId);
-  if (!mealType) throw notFoundError();
+  if (!mealType) throw notFoundError('meal type');
 
   try {
     return await updateMealTypeRepo(prisma, id, data);
   } catch (err) {
-    if (isP2002(err)) throw conflictError();
+    if (isP2002(err)) throw conflictError('meal type');
     throw err;
   }
 };
 
 export const deleteMealType = async (prisma: PrismaClient, id: string, workspaceId: string) => {
   const mealType = await getMealTypeById(prisma, id, workspaceId);
-  if (!mealType) throw notFoundError();
+  if (!mealType) throw notFoundError('meal type');
 
   const { recipeMealTypeCount, scheduleMealCount, mealSlotCount } = await countMealTypeReferences(
     prisma,
     id,
   );
-  if (recipeMealTypeCount > 0 || scheduleMealCount > 0 || mealSlotCount > 0) throw conflictError();
+  if (recipeMealTypeCount > 0 || scheduleMealCount > 0 || mealSlotCount > 0) throw conflictError('meal type');
 
   await deleteMealTypeRepo(prisma, id);
   return { success: true as const };

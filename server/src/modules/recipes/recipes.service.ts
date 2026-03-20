@@ -46,7 +46,7 @@ const resolveIngredients = async (
 ) => {
   const ingredientIds = ingredients.map((i) => i.id);
   const foundIngredients = await getIngredientsByIds(prisma, ingredientIds, workspaceId);
-  if (foundIngredients.length !== ingredientIds.length) throw notFoundError();
+  if (foundIngredients.length !== ingredientIds.length) throw invalidRequestError('ingredients');
 
   const variantIds = ingredients.filter((i) => i.variantId).map((i) => i.variantId as string);
   const foundVariants =
@@ -56,7 +56,7 @@ const resolveIngredients = async (
     ...new Set(ingredients.filter((i) => i.measure).map((i) => i.measure!.unit)),
   ];
   const foundUnits = unitNames.length > 0 ? await getUnitsByNames(prisma, unitNames) : [];
-  if (foundUnits.length !== unitNames.length) throw invalidRequestError();
+  if (foundUnits.length !== unitNames.length) throw invalidRequestError('unit');
   const unitMap = new Map(foundUnits.map((u) => [u.name, u.id]));
 
   return ingredients.map((ing) => {
@@ -65,7 +65,7 @@ const resolveIngredients = async (
       const variant = foundVariants.find(
         (v) => v.id === ing.variantId && v.ingredient_id === ing.id,
       );
-      if (!variant) throw invalidRequestError();
+      if (!variant) throw invalidRequestError('variantId');
       displayName = variant.variant;
     }
     return {
@@ -104,7 +104,7 @@ export const listRecipes = async (
 
 export const fetchRecipeById = async (prisma: PrismaClient, id: string, workspaceId: string) => {
   const recipe = await getRecipeById(prisma, id, workspaceId);
-  if (!recipe) throw notFoundError();
+  if (!recipe) throw notFoundError('recipe');
   return recipe;
 };
 
@@ -114,15 +114,15 @@ export const createRecipe = async (
   data: CreateRecipeBody,
 ) => {
   if (!validateExactlyOneMain(data.ingredients.map((i) => ({ isMain: i.isMain })))) {
-    throw ruleViolationError();
+    throw ruleViolationError('Recipe must have exactly one main ingredient');
   }
 
   const [foundDishTypes, foundMealTypes] = await Promise.all([
     getDishTypesByIds(prisma, data.dishTypeIds, workspaceId),
     getMealTypesByIds(prisma, data.mealTypeIds, workspaceId),
   ]);
-  if (foundDishTypes.length !== data.dishTypeIds.length) throw notFoundError();
-  if (foundMealTypes.length !== data.mealTypeIds.length) throw notFoundError();
+  if (foundDishTypes.length !== data.dishTypeIds.length) throw invalidRequestError('dishTypeIds');
+  if (foundMealTypes.length !== data.mealTypeIds.length) throw invalidRequestError('mealTypeIds');
 
   const resolvedIngredients = await resolveIngredients(prisma, data.ingredients, workspaceId);
 
@@ -139,7 +139,7 @@ export const createRecipe = async (
       workspaceId,
     );
   } catch (err) {
-    if (isP2002(err)) throw conflictError();
+    if (isP2002(err)) throw conflictError('recipe');
     throw err;
   }
 };
@@ -151,21 +151,21 @@ export const updateRecipe = async (
   data: UpdateRecipeBody,
 ) => {
   const recipe = await getRecipeById(prisma, id, workspaceId);
-  if (!recipe) throw notFoundError();
+  if (!recipe) throw notFoundError('recipe');
 
   if (data.ingredients !== undefined) {
     if (!validateExactlyOneMain(data.ingredients.map((i) => ({ isMain: i.isMain })))) {
-      throw ruleViolationError();
+      throw ruleViolationError('Recipe must have exactly one main ingredient');
     }
   }
 
   if (data.dishTypeIds) {
     const found = await getDishTypesByIds(prisma, data.dishTypeIds, workspaceId);
-    if (found.length !== data.dishTypeIds.length) throw notFoundError();
+    if (found.length !== data.dishTypeIds.length) throw invalidRequestError('dishTypeIds');
   }
   if (data.mealTypeIds) {
     const found = await getMealTypesByIds(prisma, data.mealTypeIds, workspaceId);
-    if (found.length !== data.mealTypeIds.length) throw notFoundError();
+    if (found.length !== data.mealTypeIds.length) throw invalidRequestError('mealTypeIds');
   }
 
   if (data.dishTypeIds !== undefined || data.mealTypeIds !== undefined) {
@@ -214,14 +214,14 @@ export const updateRecipe = async (
       ingredients: resolvedIngredients,
     });
   } catch (err) {
-    if (isP2002(err)) throw conflictError();
+    if (isP2002(err)) throw conflictError('recipe');
     throw err;
   }
 };
 
 export const deleteRecipe = async (prisma: PrismaClient, id: string, workspaceId: string) => {
   const recipe = await getRecipeById(prisma, id, workspaceId);
-  if (!recipe) throw notFoundError();
+  if (!recipe) throw notFoundError('recipe');
 
   const mealRecipes = await getRecipeMealRecipes(prisma, id);
   if (mealRecipes.length > 0) {

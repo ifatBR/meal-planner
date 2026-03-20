@@ -14,12 +14,12 @@ export const reorderSlots = async (
   slotIds: string[],
 ) => {
   const layout = await getLayoutById(prisma, layoutId);
-  if (!layout || layout.schedule.workspace_id !== workspaceId) throw notFoundError();
+  if (!layout || layout.schedule.workspace_id !== workspaceId) throw notFoundError('layout');
 
   const existingSlots = await getMealSlotsByLayoutId(prisma, layoutId);
   const existingIds = existingSlots.map((s) => s.id);
 
-  if (!doSlotIdsMatch(slotIds, existingIds)) throw invalidRequestError();
+  if (!doSlotIdsMatch(slotIds, existingIds)) throw invalidRequestError('slotIds');
 
   const updates = slotIds.map((id, index) => ({ id, order: index }));
   await reorderMealSlotsRepo(prisma, updates);

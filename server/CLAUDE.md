@@ -644,6 +644,20 @@ const ingredient = await getIngredientById(prisma, id, workspaceId);
 if (!ingredient) throw notFoundError();
 ```
 
+**404 vs 400 distinction — important:**
+- `notFoundError()` is for the **resource being operated on** — the entity identified by the route param (e.g. `id` in `PATCH /recipes/:id`). If that resource doesn't exist, return 404.
+- `invalidRequestError()` is for **invalid values in the request body** — if the client sends IDs in the body (e.g. `dishTypeIds`, `mealTypeIds`, `ingredientIds`) that don't exist in the DB, that is a bad request, not a 404. Return 400.
+
+Example:
+```ts
+// correct
+const recipe = await getRecipeById(prisma, id, workspaceId);
+if (!recipe) throw notFoundError('recipe'); // route param → 404
+
+const found = await getDishTypesByIds(prisma, data.dishTypeIds, workspaceId);
+if (found.length !== data.dishTypeIds.length) throw invalidRequestError('dishTypeIds'); // body value → 400
+```
+
 ### Repository error responsibility
 
 Repositories never throw domain errors and never call `isP2002`. They return data or `null` and let Prisma errors bubble up. Only the service layer catches and converts errors.
