@@ -48,6 +48,17 @@ export const deleteMealType = async (prisma: PrismaClient, id: string) => {
   return prisma.mealType.delete({ where: { id } });
 };
 
+export const getMealTypesByIds = async (
+  prisma: PrismaClient,
+  ids: string[],
+  workspaceId: string,
+) => {
+  return prisma.mealType.findMany({
+    where: { id: { in: ids }, workspace_id: workspaceId },
+    select: { id: true },
+  });
+};
+
 export const countMealTypeReferences = async (prisma: PrismaClient, id: string) => {
   const [recipeMealTypeCount, scheduleMealCount, mealSlotCount] = await Promise.all([
     prisma.recipeMealType.count({ where: { meal_type_id: id } }),

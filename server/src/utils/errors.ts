@@ -1,5 +1,17 @@
 import createError from '@fastify/error';
 import { ERROR_CODES, ERROR_MESSAGES, HTTP_STATUS } from '../constants';
+import type { AffectedSchedule } from '@app/types/common';
+
+export class ScheduleConflictError extends Error {
+  constructor(
+    public readonly errorCode: string,
+    message: string,
+    public readonly affectedSchedules: AffectedSchedule[],
+  ) {
+    super(message);
+    this.name = 'ScheduleConflictError';
+  }
+}
 
 const makeError = (code: string, message: string, status: number) => () =>
   new (createError(code, message, status))();

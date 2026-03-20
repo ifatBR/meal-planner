@@ -7,10 +7,9 @@ const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }),
 });
 
-const WS_ID = '00000000-0000-0000-0000-000000000001';
-const OTHER_WS = '00000000-0000-0000-0000-000000000002';
-const SCHED_ID = '00000000-0000-0000-0000-000000000010';
-const MT_ID = '00000000-0000-0000-0000-000000000020';
+const WS_ID = '00000000-0000-0000-0004-000000000001';
+const SCHED_ID = '00000000-0000-0000-0004-000000000002';
+const MT_ID = '00000000-0000-0000-0004-000000000003';
 
 beforeAll(async () => {
   await prisma.workspace.upsert({

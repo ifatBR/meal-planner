@@ -40,6 +40,17 @@ export const deleteDishType = async (prisma: PrismaClient, id: string) => {
   return prisma.dishType.delete({ where: { id } });
 };
 
+export const getDishTypesByIds = async (
+  prisma: PrismaClient,
+  ids: string[],
+  workspaceId: string,
+) => {
+  return prisma.dishType.findMany({
+    where: { id: { in: ids }, workspace_id: workspaceId },
+    select: { id: true },
+  });
+};
+
 export const countDishTypeReferences = async (prisma: PrismaClient, id: string) => {
   const [recipeCount, constraintCount] = await Promise.all([
     prisma.recipe.count({ where: { dish_type_id: id } }),

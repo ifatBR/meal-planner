@@ -25,6 +25,24 @@ const ROLE_PERMISSIONS: Record<string, { domain: string; key: string }[]> = {
   [ROLES.VIEWER]: [],
 };
 
+const UNITS = [
+  // Weight
+  "g",
+  "kg",
+  "oz",
+  "lb",
+  // Volume
+  "ml",
+  "l",
+  "tsp",
+  "tbsp",
+  "cup",
+  "fl oz",
+  // Other
+  "pinch",
+  "piece",
+];
+
 async function main() {
   console.log("Seeding roles...");
   const roleRecords = await Promise.all(
@@ -72,6 +90,17 @@ async function main() {
       }),
     );
   }
+
+  console.log("Seeding units...");
+  await Promise.all(
+    UNITS.map((name) =>
+      prisma.unit.upsert({
+        where: { name },
+        update: {},
+        create: { name },
+      }),
+    ),
+  );
 
   console.log("Done.");
 }

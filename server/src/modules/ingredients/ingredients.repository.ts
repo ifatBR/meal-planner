@@ -125,3 +125,25 @@ export const createVariant = async (
 export const deleteVariant = async (prisma: PrismaClient, variantId: string) => {
   return prisma.ingredientVariant.delete({ where: { id: variantId } });
 };
+
+export const getIngredientsByIds = async (
+  prisma: PrismaClient,
+  ids: string[],
+  workspaceId: string,
+) => {
+  return prisma.ingredient.findMany({
+    where: { id: { in: ids }, workspace_id: workspaceId },
+    select: { id: true },
+  });
+};
+
+export const getVariantsByIds = async (
+  prisma: PrismaClient,
+  ids: string[],
+  workspaceId: string,
+) => {
+  return prisma.ingredientVariant.findMany({
+    where: { id: { in: ids }, workspace_id: workspaceId },
+    select: { id: true, variant: true, ingredient_id: true },
+  });
+};

@@ -516,6 +516,23 @@ Response shapes must be defined as plain TypeScript types (not Zod) in the share
 
 Internal types that the FE will never need (e.g. repository return shapes, internal service params) can be defined as plain TypeScript interfaces directly in the file that uses them — no separate types file needed.
 
+### PATCH body schemas
+
+PATCH body schemas have all fields optional by definition. Always add a `.refine()` to enforce that at least one field is provided:
+
+```ts
+export const UpdateRecipeBodySchema = z.object({
+  name: z.string().min(1).max(80).optional(),
+  instructions: z.string().nullable().optional(),
+  // ...other optional fields
+}).refine(
+  (data) => Object.values(data).some((v) => v !== undefined),
+  { message: 'At least one field must be provided' },
+);
+```
+
+This applies to every PATCH endpoint without exception.
+
 ### Validation in routes
 
 Always use `.parse()` explicitly in the route handler — do not rely on Fastify's JSON schema option:
@@ -813,6 +830,9 @@ For gap rules, resolve each recipe's main ingredient to its parent ingredient vi
 - Use **Vitest** for all tests
 - Test files live in `modules/<module>/tests/`
 - Four test types, each testing a different layer with different isolation strategy
+- **Test ordering:** always write the success case first, then error/edge cases after. This applies within every `describe` block.
+- **Permission tests:** every route that uses `requirePermission` must have a test asserting that a request without the required permission returns 403.
+- **Workspace scoping in tests:** every DB operation in tests (`deleteMany`, `findMany`, `create`, etc.) must be scoped to the file's own `WS_ID`. Never call `deleteMany()` without a `where: { workspace_id: WS_ID }` filter — unscoped deletes will wipe data across all test files and cause cross-file interference.
 
 ---
 
@@ -954,6 +974,34 @@ export default defineConfig({
 - Truncate relevant tables in `beforeEach` — each test starts with a clean slate
 - Create prerequisite records (e.g. workspace) in `beforeAll`, not `beforeEach`
 - Truncate in dependency order — children before parents
+- Each repository test file must use unique fixed IDs for every entity it creates (workspace, schedule, dish type, meal type, ingredient, etc.) to avoid collisions when test files run against the same test DB. All fixed IDs in a test file share the same module-specific prefix — only the last segment differs per entity type.
+
+Use the following reserved module prefixes:
+
+| Module | Prefix |
+|--------|--------|
+| `ingredients` | `00000000-0000-0000-0001-` |
+| `dish-types` | `00000000-0000-0000-0002-` |
+| `meal-types` | `00000000-0000-0000-0003-` |
+| `layouts` | `00000000-0000-0000-0004-` |
+| `recipes` | `00000000-0000-0000-0005-` |
+| `schedules` | `00000000-0000-0000-0006-` |
+| `schedule-meals` | `00000000-0000-0000-0007-` |
+| `users` | `00000000-0000-0000-0008-` |
+| `permissions` | `00000000-0000-0000-0009-` |
+
+Within a module, assign a unique last segment per entity type:
+
+```typescript
+// recipes module example
+const WS_ID =   '00000000-0000-0000-0005-000000000001';
+const DT_ID =   '00000000-0000-0000-0005-000000000002';
+const MT_ID =   '00000000-0000-0000-0005-000000000003';
+const ING_ID =  '00000000-0000-0000-0005-000000000004';
+const SCHED_ID = '00000000-0000-0000-0005-000000000005';
+```
+
+This guarantees no two test files ever create records with the same ID, eliminating all cross-file constraint conflicts.
 
 ```ts
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';

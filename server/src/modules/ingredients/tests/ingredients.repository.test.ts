@@ -16,8 +16,8 @@ const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }),
 });
 
-const WS_ID = '00000000-0000-0000-0000-000000000001';
-const OTHER_WS = '00000000-0000-0000-0000-000000000002';
+const WS_ID = '00000000-0000-0000-0001-000000000001';
+const OTHER_WS = '00000000-0000-0000-0001-000000000099';
 
 beforeAll(async () => {
   await prisma.workspace.upsert({
@@ -28,8 +28,8 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  await prisma.ingredientVariant.deleteMany();
-  await prisma.ingredient.deleteMany();
+  await prisma.ingredientVariant.deleteMany({ where: { workspace_id: WS_ID } });
+  await prisma.ingredient.deleteMany({ where: { workspace_id: WS_ID } });
 });
 
 afterAll(async () => {
