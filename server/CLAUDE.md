@@ -600,15 +600,59 @@ import {
   invalidRequestError,
   internalError,
   isP2002,
+  ScheduleConflictError,
+  isScheduleConflictError,
 } from '../../utils/errors';
 
-throw notFoundError();
-throw conflictError();
+// with optional parameters
+throw notFoundError('recipe');                          // "recipe not found"
+throw notFoundError();                                  // "Resource not found"
+throw conflictError('recipe');                          // "recipe already exists"
+throw conflictError();                                  // "Resource already exists"
+throw ruleViolationError('Must have exactly one main ingredient');
+throw ruleViolationError();                             // "Rule violated"
+throw invalidRequestError('unit', 'bla');               // "Invalid unit: "bla""
+throw invalidRequestError('dishTypeIds');               // "Invalid dishTypeIds"
+throw invalidRequestError();                            // "Invalid request"
+
+// these are always generic — no parameters
 throw forbiddenError();
 throw unAuthorizedError();
-throw ruleViolationError();
-throw invalidRequestError();
 throw internalError();
+```
+
+### ScheduleConflictError
+
+Used when a delete or update would break future schedule assignments. It is a class (exception to the no-classes rule — error infrastructure is exempt). Import and throw from `utils/errors.ts`:
+
+```ts
+throw new ScheduleConflictError(
+  'recipe_in_use',
+  'This recipe is used in active schedules and cannot be deleted.',
+  affectedSchedules, // AffectedSchedule[] from @app/types/common
+);
+```
+
+Catch it in the route and return 409:
+
+```ts
+if (err instanceof ScheduleConflictError) {
+  return reply.status(409).send({
+    statusCode: 409,
+    error: err.errorCode,
+    message: err.message,
+    affected_schedules: err.affectedSchedules,
+  });
+}
+```
+
+`AffectedSchedule` type lives in `packages/types/common.ts`:
+```ts
+export type AffectedSchedule = {
+  scheduleId: string;
+  scheduleName: string;
+  dates: string[];
+};
 ```
 
 ### isP2002
@@ -658,7 +702,40 @@ const found = await getDishTypesByIds(prisma, data.dishTypeIds, workspaceId);
 if (found.length !== data.dishTypeIds.length) throw invalidRequestError('dishTypeIds'); // body value → 400
 ```
 
-### Repository error responsibility
+### Zod validation error response shape
+
+Zod validation errors are caught by the global error handler in `plugins/error-handler.ts` and returned as:
+
+```json
+{
+  "error": "Validation Error",
+  "issues": [
+    {
+      "code": "invalid_type",
+      "expected": "string",
+      "received": "undefined",
+      "path": ["ingredients", 1, "id"],
+      "message": "Required"
+    }
+  ]
+}
+```
+
+Never return raw stringified Zod errors. The `issues` array maps directly to Zod's `error.issues`.
+
+### Cross-module repository calls
+
+Repositories own their own table only. If a service needs to validate IDs from another module (e.g. recipes service validating `dishTypeIds`), it must call that module's repository function — never query the foreign table directly.
+
+```ts
+// correct — recipes service calls dish-types repository
+import { getDishTypesByIds } from '../dish-types/dish-types.repository';
+
+// wrong — recipes repository querying dish_types directly
+prisma.dishType.findMany({ where: { id: { in: ids } } }); // ← not in recipes.repository.ts
+```
+
+Each module's repository exports query helpers that other services can import when needed.
 
 Repositories never throw domain errors and never call `isP2002`. They return data or `null` and let Prisma errors bubble up. Only the service layer catches and converts errors.
 
@@ -774,8 +851,8 @@ export default ingredientRoutes;
 
 ## Module List
 
-Completed or generated: `auth`, `ingredients`, `dish-types`, `meal-types`, `layouts`
-Pending: `recipes`, `schedules`, `schedule-meals`, `users`, `permissions`
+Completed or generated: `auth`, `ingredients`, `dish-types`, `meal-types`, `layouts`, `recipes`
+Pending: `schedules`, `schedule-meals`, `users`, `permissions`
 
 ---
 
@@ -1027,7 +1104,8 @@ const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
 });
 
-const WS_ID = '00000000-0000-0000-0000-000000000001';
+const WS_ID =  '00000000-0000-0000-0001-000000000001';
+const ING_ID = '00000000-0000-0000-0001-000000000002';
 
 beforeAll(async () => {
   await prisma.workspace.upsert({

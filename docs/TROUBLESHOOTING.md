@@ -140,3 +140,10 @@ npx prisma migrate reset
 ```
 
 Then rerun `db:migrate:all`. If you don't want to lose data, see the "Migration drift detected" section above instead.
+
+---
+
+## prisma create new migration
+
+**Run:** `npx prisma migrate dev --name <migration-name>`
+This both creates the new migration and runs it against the db at once

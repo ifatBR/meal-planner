@@ -14,6 +14,11 @@ export const PERMISSIONS = {
     UPDATE: { domain: 'meal-types', key: 'update' },
     DELETE: { domain: 'meal-types', key: 'delete' },
   },
+  LAYOUTS: {
+    CREATE: { domain: 'layouts', key: 'create' },
+    UPDATE: { domain: 'layouts', key: 'update' },
+    DELETE: { domain: 'layouts', key: 'delete' },
+  },
   RECIPES: {
     CREATE: { domain: 'recipes', key: 'create' },
     UPDATE: { domain: 'recipes', key: 'update' },

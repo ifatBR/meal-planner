@@ -13,6 +13,20 @@ export class ScheduleConflictError extends Error {
   }
 }
 
+export const isScheduleConflictError = (err: unknown): err is ScheduleConflictError =>
+  err instanceof ScheduleConflictError;
+
+export class LayoutConflictError extends Error {
+  constructor(
+    public readonly errorCode: string,
+    message: string,
+    public readonly usedBySchedules: Array<{ id: string; name: string }>,
+  ) {
+    super(message);
+    this.name = 'LayoutConflictError';
+  }
+}
+
 const makeError = (code: string, message: string, status: number) => () =>
   new (createError(code, message, status))();
 

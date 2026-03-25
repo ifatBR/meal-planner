@@ -14,11 +14,12 @@ const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }),
 });
 
-const WS_ID = '00000000-0000-0000-0000-000000000005';
-const SCHED_ID = '00000000-0000-0000-0000-000000000010';
-const DT_ID = '00000000-0000-0000-0000-000000000020';
-const MT_ID = '00000000-0000-0000-0000-000000000030';
-const ING_ID = '00000000-0000-0000-0000-000000000040';
+const WS_ID =    '00000000-0000-0000-0005-000000000001';
+const DT_ID =    '00000000-0000-0000-0005-000000000002';
+const MT_ID =    '00000000-0000-0000-0005-000000000003';
+const ING_ID =   '00000000-0000-0000-0005-000000000004';
+const SCHED_ID = '00000000-0000-0000-0005-000000000005';
+const LAYOUT_ID = '00000000-0000-0000-0005-000000000006';
 const UNIT_NAME = 'grams-test';
 
 let unitId: string;
@@ -50,6 +51,11 @@ beforeAll(async () => {
     create: { name: UNIT_NAME },
   });
   unitId = unit.id;
+  await prisma.layout.upsert({
+    where: { id: LAYOUT_ID },
+    update: {},
+    create: { id: LAYOUT_ID, name: 'Test Layout', workspace_id: WS_ID },
+  });
   await prisma.schedule.upsert({
     where: { workspace_id_name: { workspace_id: WS_ID, name: 'Test Schedule' } },
     update: {},
@@ -57,6 +63,7 @@ beforeAll(async () => {
       id: SCHED_ID,
       name: 'Test Schedule',
       workspace_id: WS_ID,
+      layout_id: LAYOUT_ID,
       start_date: new Date('2026-01-01'),
       end_date: new Date('2026-12-31'),
     },

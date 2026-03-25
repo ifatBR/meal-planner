@@ -74,6 +74,7 @@ model Workspace {
   ingredient_variants IngredientVariant[] @relation("IngredientVariantWorkspace")
   schedules          Schedule[]        @relation("ScheduleWorkspace")
   workspace_users    WorkspaceUser[]   @relation("WorkspaceWorkspaceUsers")
+  layouts            Layout[]          @relation("LayoutWorkspace")
 
   @@map("workspaces")
 }
@@ -125,14 +126,29 @@ model DishType {
   @@map("dish_types")
 }
 
+model Layout {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String
+  workspace_id String   @db.Uuid
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  workspace        Workspace        @relation("LayoutWorkspace", fields: [workspace_id], references: [id])
+  week_days_layouts WeekDaysLayout[] @relation("LayoutWeekDaysLayouts")
+  schedules        Schedule[]       @relation("ScheduleLayout")
+
+  @@unique([workspace_id, name])
+  @@map("layouts")
+}
+
 model WeekDaysLayout {
   id          String   @id @default(uuid()) @db.Uuid
   days        Int[]
-  schedule_id String   @db.Uuid
+  layout_id   String   @db.Uuid
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 
-  schedule   Schedule   @relation("ScheduleWeekDaysLayouts", fields: [schedule_id], references: [id])
+  layout     Layout     @relation("LayoutWeekDaysLayouts", fields: [layout_id], references: [id], onDelete: Cascade)
   meal_slots MealSlot[] @relation("WeekDaysLayoutMealSlots")
 
   @@map("week_days_layouts")
@@ -144,10 +160,11 @@ model MealSlot {
   meal_type_id        String @db.Uuid
   order               Int
 
-  week_days_layout WeekDaysLayout   @relation("WeekDaysLayoutMealSlots", fields: [week_days_layout_id], references: [id])
+  week_days_layout WeekDaysLayout   @relation("WeekDaysLayoutMealSlots", fields: [week_days_layout_id], references: [id], onDelete: Cascade)
   meal_type        MealType         @relation("MealTypeMealSlots", fields: [meal_type_id], references: [id])
   dish_allocations DishAllocation[] @relation("MealSlotDishAllocations")
 
+  @@unique([week_days_layout_id, meal_type_id])
   @@unique([week_days_layout_id, order])
   @@map("meal_slots")
 }
@@ -158,7 +175,7 @@ model DishAllocation {
   dish_type_id String @db.Uuid
   amount       Int
 
-  meal_slot MealSlot @relation("MealSlotDishAllocations", fields: [meal_slot_id], references: [id])
+  meal_slot MealSlot @relation("MealSlotDishAllocations", fields: [meal_slot_id], references: [id], onDelete: Cascade)
   dish_type DishType @relation("DishTypeDishAllocations", fields: [dish_type_id], references: [id])
 
   @@unique([meal_slot_id, dish_type_id])
@@ -265,6 +282,7 @@ model Schedule {
   name         String
   start_date   DateTime @db.Date
   end_date     DateTime @db.Date
+  layout_id    String   @db.Uuid
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
   workspace_id String   @db.Uuid
@@ -272,7 +290,7 @@ model Schedule {
   workspace           Workspace          @relation("ScheduleWorkspace", fields: [workspace_id], references: [id])
   schedule_days       ScheduleDay[]      @relation("ScheduleDays")
   generation_settings GenerationSetting? @relation("GenerationSettings")
-  week_days_layouts WeekDaysLayout[] @relation("ScheduleWeekDaysLayouts")
+  layout              Layout             @relation("ScheduleLayout", fields: [layout_id], references: [id])
 
   @@unique([workspace_id, name])
   @@map("schedules")
@@ -283,7 +301,7 @@ model ScheduleDay {
   schedule_id String   @db.Uuid
   date        DateTime @db.Date
 
-  schedule       Schedule       @relation("ScheduleDays", fields: [schedule_id], references: [id])
+  schedule       Schedule       @relation("ScheduleDays", fields: [schedule_id], references: [id], onDelete: Cascade)
   schedule_meals ScheduleMeal[] @relation("ScheduleMeals")
 
   @@unique([schedule_id, date])
@@ -296,7 +314,7 @@ model ScheduleMeal {
   meal_type_id    String  @db.Uuid
   is_locked       Boolean @default(false)
 
-  schedule_day ScheduleDay  @relation("ScheduleMeals", fields: [schedule_day_id], references: [id])
+  schedule_day ScheduleDay  @relation("ScheduleMeals", fields: [schedule_day_id], references: [id], onDelete: Cascade)
   meal_type    MealType     @relation("ScheduleMeals", fields: [meal_type_id], references: [id])
   meal_recipes MealRecipe[] @relation("MealRecipes")
 
@@ -310,7 +328,7 @@ model MealRecipe {
   recipe_id        String @db.Uuid
   dish_type_id     String @db.Uuid
 
-  schedule_meal ScheduleMeal @relation("MealRecipes", fields: [schedule_meal_id], references: [id])
+  schedule_meal ScheduleMeal @relation("MealRecipes", fields: [schedule_meal_id], references: [id], onDelete: Cascade)
   recipe        Recipe       @relation("RecipeMealRecipes", fields: [recipe_id], references: [id])
   dish_type     DishType     @relation("MealRecipeDishType", fields: [dish_type_id], references: [id])
 
@@ -325,7 +343,7 @@ model GenerationSetting {
   main_ing_gap          Int
   is_allow_same_day_ing Boolean @default(false)
 
-  schedule      Schedule      @relation("GenerationSettings", fields: [schedule_id], references: [id])
+  schedule      Schedule      @relation("GenerationSettings", fields: [schedule_id], references: [id], onDelete: Cascade)
   blocked_meals BlockedMeal[] @relation("BlockedMeals")
 
   @@map("generation_settings")
@@ -337,7 +355,7 @@ model BlockedMeal {
   date                   DateTime @db.Date
   meal_type_id           String   @db.Uuid
 
-  generation_settings GenerationSetting @relation("BlockedMeals", fields: [generation_settings_id], references: [id])
+  generation_settings GenerationSetting @relation("BlockedMeals", fields: [generation_settings_id], references: [id], onDelete: Cascade)
   meal_type           MealType          @relation("BlockedMeals", fields: [meal_type_id], references: [id])
 
   @@unique([generation_settings_id, date, meal_type_id])
