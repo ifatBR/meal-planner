@@ -191,3 +191,34 @@ export const getUnitsByNames = async (prisma: PrismaClient, names: string[]) => 
     select: { id: true, name: true },
   });
 };
+
+export const getRecipesForGeneration = async (prisma: PrismaClient, workspaceId: string) => {
+  return prisma.recipe.findMany({
+    where: { workspace_id: workspaceId },
+    select: {
+      id: true,
+      recipe_meal_types: { select: { meal_type_id: true } },
+      recipe_dish_types: { select: { dish_type_id: true } },
+      recipe_ingredients: {
+        where: { is_main: true },
+        select: { ingredient_id: true },
+        take: 1,
+      },
+    },
+  });
+};
+
+export const getRecipesByIds = async (
+  prisma: PrismaClient,
+  ids: string[],
+  workspaceId: string,
+) => {
+  return prisma.recipe.findMany({
+    where: { id: { in: ids }, workspace_id: workspaceId },
+    select: {
+      id: true,
+      recipe_meal_types: { select: { meal_type_id: true } },
+      recipe_dish_types: { select: { dish_type_id: true } },
+    },
+  });
+};

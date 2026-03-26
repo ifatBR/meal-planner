@@ -290,7 +290,7 @@ model Schedule {
   workspace           Workspace          @relation("ScheduleWorkspace", fields: [workspace_id], references: [id])
   schedule_days       ScheduleDay[]      @relation("ScheduleDays")
   generation_settings GenerationSetting? @relation("GenerationSettings")
-  layout              Layout             @relation("ScheduleLayout", fields: [layout_id], references: [id])
+  layout              Layout             @relation("ScheduleLayout", fields: [layout_id], references: [id], onDelete: Restrict)
 
   @@unique([workspace_id, name])
   @@map("schedules")
@@ -309,10 +309,11 @@ model ScheduleDay {
 }
 
 model ScheduleMeal {
-  id              String  @id @default(uuid()) @db.Uuid
-  schedule_day_id String  @db.Uuid
-  meal_type_id    String  @db.Uuid
-  is_locked       Boolean @default(false)
+  id                  String  @id @default(uuid()) @db.Uuid
+  schedule_day_id     String  @db.Uuid
+  meal_type_id        String  @db.Uuid
+  is_locked           Boolean @default(false)
+  is_manually_edited  Boolean @default(false)
 
   schedule_day ScheduleDay  @relation("ScheduleMeals", fields: [schedule_day_id], references: [id], onDelete: Cascade)
   meal_type    MealType     @relation("ScheduleMeals", fields: [meal_type_id], references: [id])
