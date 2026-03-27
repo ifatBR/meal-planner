@@ -163,7 +163,7 @@ export const fetchScheduleCalendar = async (
     current.setUTCDate(current.getUTCDate() + 1);
   }
 
-  return { scheduleId: id, anchorDate, days };
+  return { anchorDate, days };
 };
 
 export const generateScheduleService = async (

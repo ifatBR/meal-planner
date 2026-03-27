@@ -70,13 +70,17 @@ describe('GET /schedules', () => {
     expect(res.json().data.meta.total).toBe(1);
   });
 
-  it('returns 400 for missing page param', async () => {
+  it('returns 200 when page and pageSize are omitted (defaults apply)', async () => {
+    vi.mocked(service.listSchedules).mockResolvedValue({
+      items: [],
+      meta: { page: 1, pageSize: 20, total: 0, totalPages: 0 },
+    });
     const res = await app.inject({
       method: 'GET',
       url: '/schedules',
       headers: { authorization: `Bearer ${signToken(app)}` },
     });
-    expect(res.statusCode).toBe(400);
+    expect(res.statusCode).toBe(200);
   });
 
   it('returns 401 without token', async () => {
@@ -347,7 +351,6 @@ describe('GET /schedules/:id/calendar', () => {
 
   it('returns 200 with calendar data', async () => {
     vi.mocked(service.fetchScheduleCalendar).mockResolvedValue({
-      scheduleId: SCHED_ID,
       anchorDate: '2026-03-15',
       days: [],
     });
@@ -358,7 +361,6 @@ describe('GET /schedules/:id/calendar', () => {
     });
     expect(res.statusCode).toBe(200);
     const data = res.json().data;
-    expect(data.scheduleId).toBe(SCHED_ID);
     expect(data.anchorDate).toBe('2026-03-15');
     expect(data.days).toEqual([]);
   });

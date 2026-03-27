@@ -214,7 +214,6 @@ describe('fetchScheduleCalendar', () => {
     vi.mocked(repo.getScheduleById).mockResolvedValue(mockScheduleRow);
     vi.mocked(repo.getScheduleCalendar).mockResolvedValue([]);
     const result = await fetchScheduleCalendar(mockPrisma, SCHED_ID, WS_ID, '2026-03-15');
-    expect(result.scheduleId).toBe(SCHED_ID);
     expect(result.anchorDate).toBe('2026-03-15');
     // window: 2026-03-08 to 2026-03-28 (clamped to schedule 2026-03-01..2026-04-01)
     expect(result.days[0].date).toBe('2026-03-08');

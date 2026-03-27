@@ -182,7 +182,6 @@ async function scheduleRoutes(fastify: FastifyInstance) {
       );
       return {
         data: {
-          scheduleId: result.scheduleId,
           anchorDate: result.anchorDate,
           days: result.days.map(mapCalendarDay),
         },
