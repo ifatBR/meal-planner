@@ -19,7 +19,8 @@ export const createDishType = async (
   workspaceId: string,
 ) => {
   try {
-    return await createDishTypeRepo(prisma, data, workspaceId);
+    const normalizedData = { name: data.name.trim().toLowerCase() };
+    return await createDishTypeRepo(prisma, normalizedData, workspaceId);
   } catch (err) {
     if (isP2002(err)) throw conflictError('dish type');
     throw err;
@@ -36,7 +37,8 @@ export const updateDishType = async (
   if (!dishType) throw notFoundError('dish type');
 
   try {
-    return await updateDishTypeRepo(prisma, id, data);
+    const normalizedData = { name: data.name.trim().toLowerCase() };
+    return await updateDishTypeRepo(prisma, id, normalizedData);
   } catch (err) {
     if (isP2002(err)) throw conflictError('dish type');
     throw err;

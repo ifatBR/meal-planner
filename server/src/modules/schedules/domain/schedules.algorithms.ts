@@ -130,7 +130,7 @@ export const generateSchedule = (input: AlgorithmInput): AlgorithmOutput => {
 
     const wdl = weekDaysLayouts.find((l) => l.days.includes(dayOfWeek));
     if (!wdl) {
-      current.setDate(current.getDate() + 1);
+      current.setUTCDate(current.getUTCDate() + 1);
       continue;
     }
 
@@ -235,7 +235,7 @@ export const generateSchedule = (input: AlgorithmInput): AlgorithmOutput => {
       resultDays.push({ date: dateStr, meals: dayMeals });
     }
 
-    current.setDate(current.getDate() + 1);
+    current.setUTCDate(current.getUTCDate() + 1);
   }
 
   if (summary.partialMealSlots > 0) {

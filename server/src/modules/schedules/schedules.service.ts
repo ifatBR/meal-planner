@@ -31,7 +31,7 @@ import {
   invalidRequestError,
   isP2002,
 } from '../../utils/errors';
-import { formatDate } from '../../utils/date';
+import { formatDate, parseDate } from '../../utils/date';
 
 export const listSchedules = async (
   prisma: PrismaClient,
@@ -61,8 +61,8 @@ export const createSchedule = async (
   workspaceId: string,
   data: CreateScheduleBody,
 ) => {
-  const startDate = new Date(data.startDate);
-  const endDate = new Date(data.endDate);
+  const startDate = parseDate(data.startDate);
+  const endDate = parseDate(data.endDate);
 
   const rangeCheck = validateScheduleDateRange(startDate, endDate);
   if (!rangeCheck.valid) throw ruleViolationError(rangeCheck.reason);
@@ -71,7 +71,7 @@ export const createSchedule = async (
   if (!layout) throw invalidRequestError('layoutId');
 
   const overlapping = await getOverlappingSchedules(prisma, workspaceId, startDate, endDate);
-  if (overlapping.length > 0) throw conflictError('schedule');
+  if (overlapping.length > 0) throw conflictError('schedule for this range');
 
   try {
     return await createScheduleRepo(
@@ -97,7 +97,7 @@ export const updateSchedule = async (
   try {
     return await updateScheduleRepo(prisma, id, { name: data.name });
   } catch (err) {
-    if (isP2002(err)) throw conflictError('schedule');
+    if (isP2002(err)) throw conflictError('schedule name');
     throw err;
   }
 };
@@ -131,18 +131,18 @@ export const fetchScheduleCalendar = async (
   const schedule = await getScheduleById(prisma, id, workspaceId);
   if (!schedule) throw notFoundError('schedule');
 
-  const anchor = new Date(anchorDate);
-  const scheduleStart = new Date(schedule.start_date);
-  const scheduleEnd = new Date(schedule.end_date);
+  const anchor = parseDate(anchorDate);
+  const scheduleStart = schedule.start_date;
+  const scheduleEnd = schedule.end_date;
 
   if (anchor < scheduleStart || anchor > scheduleEnd) {
     throw invalidRequestError('anchorDate');
   }
 
   const windowStart = new Date(anchor);
-  windowStart.setDate(windowStart.getDate() - 7);
+  windowStart.setUTCDate(windowStart.getUTCDate() - 7);
   const windowEnd = new Date(anchor);
-  windowEnd.setDate(windowEnd.getDate() + 13);
+  windowEnd.setUTCDate(windowEnd.getUTCDate() + 13);
 
   const from = new Date(Math.max(windowStart.getTime(), scheduleStart.getTime()));
   const to = new Date(Math.min(windowEnd.getTime(), scheduleEnd.getTime()));
@@ -160,7 +160,7 @@ export const fetchScheduleCalendar = async (
       date: dateStr,
       meals: existing?.schedule_meals ?? [],
     });
-    current.setDate(current.getDate() + 1);
+    current.setUTCDate(current.getUTCDate() + 1);
   }
 
   return { scheduleId: id, anchorDate, days };
@@ -175,12 +175,12 @@ export const generateScheduleService = async (
   const schedule = await getScheduleById(prisma, id, workspaceId);
   if (!schedule) throw notFoundError('schedule');
 
-  const scheduleStart = new Date(schedule.start_date);
-  const scheduleEnd = new Date(schedule.end_date);
+  const scheduleStart = schedule.start_date;
+  const scheduleEnd = schedule.end_date;
 
   const blockedMeals = data.settings.blockedMeals ?? [];
   for (const bm of blockedMeals) {
-    const bmDate = new Date(bm.date);
+    const bmDate = parseDate(bm.date);
     if (bmDate < scheduleStart || bmDate > scheduleEnd) {
       throw invalidRequestError('blockedMeals');
     }
@@ -253,7 +253,7 @@ export const generateScheduleService = async (
 
   // Calendar window: startDate to min(startDate+13, endDate)
   const windowEnd = new Date(scheduleStart);
-  windowEnd.setDate(windowEnd.getDate() + 13);
+  windowEnd.setUTCDate(windowEnd.getUTCDate() + 13);
   const calendarEnd = new Date(Math.min(windowEnd.getTime(), scheduleEnd.getTime()));
 
   const calendarDays = await getScheduleCalendarRepo(prisma, id, scheduleStart, calendarEnd);
@@ -269,7 +269,7 @@ export const generateScheduleService = async (
       date: dateStr,
       meals: existing?.schedule_meals ?? [],
     });
-    cur.setDate(cur.getDate() + 1);
+    cur.setUTCDate(cur.getUTCDate() + 1);
   }
 
   return {

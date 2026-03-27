@@ -52,9 +52,7 @@ const resolveIngredients = async (
   const foundVariants =
     variantIds.length > 0 ? await getVariantsByIds(prisma, variantIds, workspaceId) : [];
 
-  const unitNames = [
-    ...new Set(ingredients.filter((i) => i.measure).map((i) => i.measure!.unit)),
-  ];
+  const unitNames = [...new Set(ingredients.filter((i) => i.measure).map((i) => i.measure!.unit))];
   const foundUnits = unitNames.length > 0 ? await getUnitsByNames(prisma, unitNames) : [];
   if (foundUnits.length !== unitNames.length) throw invalidRequestError('unit');
   const unitMap = new Map(foundUnits.map((u) => [u.name, u.id]));
@@ -130,7 +128,7 @@ export const createRecipe = async (
     return await createRecipeRepo(
       prisma,
       {
-        name: data.name,
+        name: data.name.trim().toLowerCase(),
         instructions: data.instructions,
         dishTypeIds: data.dishTypeIds,
         mealTypeIds: data.mealTypeIds,
@@ -207,7 +205,7 @@ export const updateRecipe = async (
 
   try {
     return await updateRecipeRepo(prisma, id, {
-      name: data.name,
+      name: data.name?.trim()?.toLowerCase(),
       instructions: data.instructions,
       dishTypeIds: data.dishTypeIds,
       mealTypeIds: data.mealTypeIds,

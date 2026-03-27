@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const ScheduleParamsSchema = z.object({
   id: z.string().uuid(),
@@ -6,8 +6,8 @@ export const ScheduleParamsSchema = z.object({
 export type ScheduleParams = z.infer<typeof ScheduleParamsSchema>;
 
 export const ListSchedulesQuerySchema = z.object({
-  page: z.coerce.number().int().min(1),
-  pageSize: z.coerce.number().int().min(1).max(50),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(50).default(20),
   search: z.string().optional(),
 });
 export type ListSchedulesQuery = z.infer<typeof ListSchedulesQuerySchema>;
@@ -15,8 +15,8 @@ export type ListSchedulesQuery = z.infer<typeof ListSchedulesQuerySchema>;
 export const CreateScheduleBodySchema = z.object({
   name: z.string().min(1).max(50),
   layoutId: z.string().uuid(),
-  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD'),
-  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD'),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD"),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD"),
 });
 export type CreateScheduleBody = z.infer<typeof CreateScheduleBodySchema>;
 
@@ -26,12 +26,12 @@ export const UpdateScheduleBodySchema = z.object({
 export type UpdateScheduleBody = z.infer<typeof UpdateScheduleBodySchema>;
 
 export const CalendarQuerySchema = z.object({
-  anchorDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD'),
+  anchorDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD"),
 });
 export type CalendarQuery = z.infer<typeof CalendarQuerySchema>;
 
 const BlockedMealInputSchema = z.object({
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD'),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD"),
   mealTypeIds: z.array(z.string().uuid()).min(1),
 });
 

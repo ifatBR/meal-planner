@@ -65,7 +65,7 @@ For gap rules, resolve each recipe's main ingredient to its parent ingredient vi
 
 ## Dish Types
 
-Simple CRUD. Nothing notable here. 409 on delete if referenced by recipes or meal_type_dish_constraints (now `meal_slots`/`dish_allocations` after the schema redesign).
+Simple CRUD. Nothing notable here. 409 on delete if referenced by recipes or meal slots/dish allocations.
 
 ---
 
@@ -73,7 +73,7 @@ Simple CRUD. Nothing notable here. 409 on delete if referenced by recipes or mea
 
 Simple CRUD — name only. Meal types are just labels (Breakfast, Lunch, Dinner). They have no order field and no dish constraints directly on them.
 
-**Important:** Meal types had dish constraints in the original design (`MealTypeDishConstraint`). This was removed entirely during the redesign. See the WeekDaysLayout section below.
+**Important:** Meal types had dish constraints in the original design (`MealTypeDishConstraint`). This was removed entirely during the redesign — dish constraints are now defined in `DishAllocation` within the week layout structure.
 
 ---
 
@@ -85,41 +85,82 @@ The original schema had `MealTypeDishConstraint` with a `day_of_week` field. Thi
 The redesigned model:
 
 ```
-Schedule
+Layout (workspace-level, reusable)
 └── WeekDaysLayout (days: [0,1,2,3,4]) ← "Sun–Thu"
     └── MealSlot (meal_type: Lunch, order: 2)
         └── DishAllocation (dish_type: Main, amount: 2)
 ```
 
-- A schedule has multiple `WeekDaysLayout` records — one per "days range" (e.g. Sun–Thu, Fri, Sat).
+- A `Layout` is a workspace-level entity with a name. It is reusable across schedules.
+- A layout has multiple `WeekDaysLayout` records — one per "days range" (e.g. Sun–Thu, Fri, Sat).
 - Each layout covers a set of days (`days: Int[]`) that share the same meal structure.
 - Each layout has meal slots in order, each slot pointing to a meal type.
 - Each slot has dish allocations defining how many of each dish type are required.
 
-### Why schedule-scoped, not workspace-scoped
-`WeekDaysLayout` belongs to a `Schedule`, not directly to a `Workspace`. This means different schedules can have different week structures. For MVP this isn't used (one template per schedule), but the model already supports it without schema changes.
+### Why layouts are workspace-scoped, not schedule-scoped
+`Layout` is a workspace-level entity so it can be reused across multiple schedules. A schedule holds a `layout_id` FK. This means the same week structure can be applied to many schedules without duplication.
+
+`WeekDaysLayout` (and its children `MealSlot`, `DishAllocation`) belong to `Layout`, not to `Schedule`. The schedule just references the layout by ID.
+
+### Layout mutability rules
+Editing a layout's structure (its `WeekDaysLayouts`) is blocked if the layout is used by 2 or more schedules. If it's used by exactly 1 schedule, structural edits are allowed (since no other schedule would be affected). The `scheduleId` query param on PATCH and DELETE provides this context.
+
+The `inUse` boolean is calculated on list responses — never stored. The `usedBySchedules: [{ id, name }]` array is included on detail responses so the frontend can render lock state and info tooltips.
+
+A clone endpoint exists for creating an editable copy of an in-use layout.
+
+### layoutId on schedule creation and generation
+`layoutId` is required at schedule creation and can be changed at generation time (to apply a different layout to a new or regenerated schedule). It cannot be changed via `PATCH /schedules/:id` — only via the generate endpoint.
 
 ### Day overlap enforcement
-A day should belong to exactly one `WeekDaysLayout` per schedule. This is enforced in the service layer, not at the DB level (hard to enforce with an array column). The service checks for day overlap when creating/updating layouts.
+A day belongs to exactly one `WeekDaysLayout` per layout — enforced in the service layer, not at the DB level (hard to enforce with an array column).
 
 ### MealSlot order
-`order` on `MealSlot` is derived from the array index when the client sends meal slots. The client sends a full ordered array — the server assigns `order = index`. Reordering is done via `PATCH /api/v1/layouts/:layoutId/slots/reorder` which accepts the full new array of slot IDs and re-derives order from index in a transaction.
+`order` on `MealSlot` is derived from the array index when the client sends meal slots. The client sends a full ordered array — the server assigns `order = index`. Reordering is handled via PATCH with a full `weekDaysLayouts` array — order is re-derived from index. No separate reorder endpoint. PATCH performs wholesale replacement: if `weekDaysLayouts` is provided, all existing records are deleted and recreated in a transaction.
 
-### Layouts reorder uses SCHEDULES.UPDATE permission
-There is no separate `layouts` permission. The reorder endpoint uses `PERMISSIONS.SCHEDULES.UPDATE` — editing a layout is considered editing the schedule.
+### Layouts use SCHEDULES permissions
+There is no separate `layouts` permission. Layout write endpoints use `PERMISSIONS.SCHEDULES.UPDATE` — editing a layout is considered editing the schedule.
 
 ---
 
-## Post-MVP: Day-level overrides
+## Schedules
 
-**Planned but not built for MVP:** The ability to override a specific day's meal structure within a generated schedule. For example, a kitchen might want to serve a special meal on a specific date that doesn't match the standard week layout.
+### startDate and endDate are immutable
+Once set at creation, the schedule date range cannot be changed. Regeneration can change the layout but not the dates.
 
-The intended flow:
-1. User edits the meal structure for a specific date (adding/removing meal slots or dish allocations for that day only).
-2. Server saves the override.
-3. Server offers to regenerate the schedule from that date forward, keeping everything before it intact.
+### ScheduleDay created on generation, not creation
+`ScheduleDay` records are only created during generation. Creating a schedule just stores the metadata (name, dates, layout, generation settings). The actual day/meal records are produced by the generation algorithm.
 
-This requires a new override model (something like `ScheduleDayOverride`) and partial regeneration logic in the schedule generation algorithm. The current `WeekDaysLayout` model does not need to change for this — overrides would sit alongside it.
+### Calendar window
+The calendar view window is anchorDate−7 through anchorDate+13 (21 days), clamped to schedule bounds.
+
+---
+
+## Schedule Generation
+
+### Built for MVP — best-effort, synchronous
+The generation algorithm is fully implemented. It runs synchronously and returns partial results with warnings rather than failing hard when constraints can't be satisfied.
+
+### Deterministic, not AI-driven
+The algorithm is a constraint-satisfaction approach — not generative AI. It fills meal slots deterministically based on gap rules and dish type requirements.
+
+### Summary counts meal slots, not dish allocations
+All summary counters (`filledMealSlots`, `partialMealSlots`, `emptyMealSlots`) are calculated per meal slot, not per individual dish allocation. `partialMealSlots` is calculated after the dish allocation loop by comparing `totalNeeded` vs `totalFilled`. `emptyMealSlots` counts completely unfilled slots.
+
+### Locked meals preserved on regeneration
+Locked meals carry their actual recipes into `GeneratedMeal` during regeneration. The `LockedMealForGeneration` type includes `recipes: Array<{ recipeId, dishTypeId }>` so locked assignments are preserved exactly.
+
+### isManuallyEdited flag
+`ScheduleMeal` has an `isManuallyEdited Boolean @default(false)` field. It is set to `true` on any manual PATCH or DELETE of a schedule meal. It is reset to `false` on regeneration for all unlocked meals. `DELETE /schedule-meals/:id/recipes` sets `isLocked=false` AND `isManuallyEdited=true`.
+
+### Timezone handling
+All `YYYY-MM-DD` date strings are parsed via `parseDate()` from `src/utils/date.ts`, which uses `Date.UTC()` to avoid off-by-one day errors in non-UTC timezones. Prisma `Date` objects are used directly without re-wrapping. `formatDate` also lives in the same file.
+
+### Feasibility check is post-MVP
+A pre-generation check that warns the user if constraints make a valid schedule impossible. Shares ~30% of logic with the generator.
+
+### Strict mode is post-MVP
+Stops at first failure instead of best-effort.
 
 ---
 
@@ -129,23 +170,9 @@ The permissions system is fully implemented in the DB and the `requirePermission
 
 ---
 
-## Schedule Generation — Deferred
-
-The generation algorithm is the most complex part of the system and is not yet built. Key decisions already made:
-
-- **Deterministic, not AI-driven** — the algorithm is a constraint-satisfaction approach, not generative AI.
-- **Best-effort for MVP** — fills what it can, marks gaps with explanations rather than failing hard.
-- **Feasibility check is post-MVP** — a pre-generation check that warns the user if the constraints make a valid schedule impossible. Shares ~30% of logic with the generator.
-- **Strict mode is post-MVP** — stops at first failure instead of best-effort.
-- **Gap rules** — two types: same main ingredient gap (e.g. no chicken within 3 days), same recipe gap (e.g. no same recipe within 7 days). Stored in `GenerationSetting`. The `is_allow_same_day_ing` flag allows the same main ingredient on the same day (e.g. lunch and dinner both have chicken).
-
----
-
 ## What's left for MVP
 
-- `recipes` module
-- `schedules` module (including generation algorithm)
-- `schedule-meals` module
-- `users` module (admin only)
-- `permissions` module (admin only — UI deferred)
-- Frontend (not started)
+- Frontend
+- Registration / workspace bootstrap script or simple internal screen
+- Users module (admin only)
+- Permissions module (admin only — UI deferred)
