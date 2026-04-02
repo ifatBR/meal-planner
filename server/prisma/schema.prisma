@@ -66,6 +66,7 @@ model Workspace {
   name       String
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
+  timezone  String?  @default("UTC")
 
   meal_types         MealType[]        @relation("MealTypeWorkspace")
   dish_types         DishType[]        @relation("DishTypeWorkspace")
