@@ -2,7 +2,7 @@
  * Dev seed script — populates a workspace with realistic test data.
  *
  * Usage:
- *   SEED_WORKSPACE_ID=<your-workspace-id> npx tsx prisma/seed-dev.ts
+ *   DATABASE_URL=<database-url> SEED_WORKSPACE_ID=<your-workspace-id> npx tsx prisma/seed-dev.ts
  *
  * Requires the workspace to already exist and its ingredients to be seeded
  * (via the normal workspace bootstrap flow). Safe to re-run.
@@ -289,8 +289,8 @@ async function seedLayout() {
                   meal_type_id: ids.mealTypes['Breakfast'],
                   dish_allocations: {
                     create: [
-                      { dish_type_id: ids.dishTypes['Main'], amount: 1 },
-                      { dish_type_id: ids.dishTypes['Side'], amount: 1 },
+                      { dish_type_id: ids.dishTypes['Main'], amount: 1, order: 0 },
+                      { dish_type_id: ids.dishTypes['Side'], amount: 1, order: 1 },
                     ],
                   },
                 },
@@ -299,9 +299,9 @@ async function seedLayout() {
                   meal_type_id: ids.mealTypes['Lunch'],
                   dish_allocations: {
                     create: [
-                      { dish_type_id: ids.dishTypes['Main'], amount: 2 },
-                      { dish_type_id: ids.dishTypes['Salad'], amount: 1 },
-                      { dish_type_id: ids.dishTypes['Soup'], amount: 1 },
+                      { dish_type_id: ids.dishTypes['Main'], amount: 2, order: 0 },
+                      { dish_type_id: ids.dishTypes['Salad'], amount: 1, order: 1 },
+                      { dish_type_id: ids.dishTypes['Soup'], amount: 1, order: 2 },
                     ],
                   },
                 },
@@ -310,8 +310,8 @@ async function seedLayout() {
                   meal_type_id: ids.mealTypes['Dinner'],
                   dish_allocations: {
                     create: [
-                      { dish_type_id: ids.dishTypes['Main'], amount: 2 },
-                      { dish_type_id: ids.dishTypes['Side'], amount: 1 },
+                      { dish_type_id: ids.dishTypes['Main'], amount: 2, order: 0 },
+                      { dish_type_id: ids.dishTypes['Side'], amount: 1, order: 1 },
                     ],
                   },
                 },
@@ -327,7 +327,7 @@ async function seedLayout() {
                   order: 0,
                   meal_type_id: ids.mealTypes['Breakfast'],
                   dish_allocations: {
-                    create: [{ dish_type_id: ids.dishTypes['Main'], amount: 1 }],
+                    create: [{ dish_type_id: ids.dishTypes['Main'], amount: 1, order: 0 }],
                   },
                 },
                 {
@@ -335,8 +335,8 @@ async function seedLayout() {
                   meal_type_id: ids.mealTypes['Lunch'],
                   dish_allocations: {
                     create: [
-                      { dish_type_id: ids.dishTypes['Main'], amount: 2 },
-                      { dish_type_id: ids.dishTypes['Salad'], amount: 1 },
+                      { dish_type_id: ids.dishTypes['Main'], amount: 2, order: 0 },
+                      { dish_type_id: ids.dishTypes['Salad'], amount: 1, order: 1 },
                     ],
                   },
                 },
@@ -353,8 +353,8 @@ async function seedLayout() {
                   meal_type_id: ids.mealTypes['Lunch'],
                   dish_allocations: {
                     create: [
-                      { dish_type_id: ids.dishTypes['Main'], amount: 1 },
-                      { dish_type_id: ids.dishTypes['Soup'], amount: 1 },
+                      { dish_type_id: ids.dishTypes['Main'], amount: 1, order: 0 },
+                      { dish_type_id: ids.dishTypes['Soup'], amount: 1, order: 1 },
                     ],
                   },
                 },

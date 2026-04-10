@@ -175,11 +175,13 @@ model DishAllocation {
   meal_slot_id String @db.Uuid
   dish_type_id String @db.Uuid
   amount       Int
+  order        Int
 
   meal_slot MealSlot @relation("MealSlotDishAllocations", fields: [meal_slot_id], references: [id], onDelete: Cascade)
   dish_type DishType @relation("DishTypeDishAllocations", fields: [dish_type_id], references: [id])
 
   @@unique([meal_slot_id, dish_type_id])
+  @@unique([meal_slot_id, order])
   @@map("dish_allocations")
 }
 

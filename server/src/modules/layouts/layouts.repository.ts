@@ -27,6 +27,7 @@ const layoutDetailSelect = {
               amount: true,
               dish_type: { select: { id: true, name: true } },
             },
+            orderBy: { order: 'asc' as const },
           },
         },
         orderBy: { order: 'asc' as const },
@@ -75,9 +76,10 @@ const buildWeekDaysLayoutsCreate = (weekDaysLayouts: WeekDaysLayoutInput[]) =>
         meal_type_id: slot.mealTypeId,
         order,
         dish_allocations: {
-          create: slot.dishAllocations.map((da) => ({
+          create: slot.dishAllocations.map((da, daOrder) => ({
             dish_type_id: da.dishTypeId,
             amount: da.amount,
+            order: daOrder,
           })),
         },
       })),
@@ -116,11 +118,7 @@ export const createLayout = async (
   });
 };
 
-export const updateLayout = async (
-  prisma: PrismaClient,
-  id: string,
-  data: UpdateLayoutData,
-) => {
+export const updateLayout = async (prisma: PrismaClient, id: string, data: UpdateLayoutData) => {
   return prisma.$transaction(async (tx) => {
     if (data.weekDaysLayouts !== undefined) {
       await tx.weekDaysLayout.deleteMany({ where: { layout_id: id } });
@@ -162,7 +160,8 @@ export const cloneLayout = async (
                 meal_type_id: true,
                 order: true,
                 dish_allocations: {
-                  select: { dish_type_id: true, amount: true },
+                  select: { dish_type_id: true, amount: true, order: true },
+                  orderBy: { order: 'asc' as const },
                 },
               },
               orderBy: { order: 'asc' as const },
@@ -189,6 +188,7 @@ export const cloneLayout = async (
                   create: slot.dish_allocations.map((da) => ({
                     dish_type_id: da.dish_type_id,
                     amount: da.amount,
+                    order: da.order,
                   })),
                 },
               })),

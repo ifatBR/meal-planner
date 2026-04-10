@@ -446,7 +446,11 @@ await seedWorkspaceIngredients(prisma, workspace.id);
 ```json
 [
   { "name": "eggplant", "category": "vegetables", "variants": ["aubergine", "brinjal"] },
-  { "name": "chicken", "category": "proteins", "variants": ["chicken breast", "chicken thigh", "chicken wings", "whole chicken"] },
+  {
+    "name": "chicken",
+    "category": "proteins",
+    "variants": ["chicken breast", "chicken thigh", "chicken wings", "whole chicken"]
+  },
   { "name": "cilantro", "category": "herbs", "variants": ["coriander", "dhania"] }
 ]
 ```
@@ -521,14 +525,15 @@ Internal types that the FE will never need (e.g. repository return shapes, inter
 PATCH body schemas have all fields optional by definition. Always add a `.refine()` to enforce that at least one field is provided:
 
 ```ts
-export const UpdateRecipeBodySchema = z.object({
-  name: z.string().min(1).max(80).optional(),
-  instructions: z.string().nullable().optional(),
-  // ...other optional fields
-}).refine(
-  (data) => Object.values(data).some((v) => v !== undefined),
-  { message: 'At least one field must be provided' },
-);
+export const UpdateRecipeBodySchema = z
+  .object({
+    name: z.string().min(1).max(80).optional(),
+    instructions: z.string().nullable().optional(),
+    // ...other optional fields
+  })
+  .refine((data) => Object.values(data).some((v) => v !== undefined), {
+    message: 'At least one field must be provided',
+  });
 ```
 
 This applies to every PATCH endpoint without exception.
@@ -605,15 +610,15 @@ import {
 } from '../../utils/errors';
 
 // with optional parameters
-throw notFoundError('recipe');                          // "recipe not found"
-throw notFoundError();                                  // "Resource not found"
-throw conflictError('recipe');                          // "recipe already exists"
-throw conflictError();                                  // "Resource already exists"
+throw notFoundError('recipe'); // "recipe not found"
+throw notFoundError(); // "Resource not found"
+throw conflictError('recipe'); // "recipe already exists"
+throw conflictError(); // "Resource already exists"
 throw ruleViolationError('Must have exactly one main ingredient');
-throw ruleViolationError();                             // "Rule violated"
-throw invalidRequestError('unit', 'bla');               // "Invalid unit: "bla""
-throw invalidRequestError('dishTypeIds');               // "Invalid dishTypeIds"
-throw invalidRequestError();                            // "Invalid request"
+throw ruleViolationError(); // "Rule violated"
+throw invalidRequestError('unit', 'bla'); // "Invalid unit: "bla""
+throw invalidRequestError('dishTypeIds'); // "Invalid dishTypeIds"
+throw invalidRequestError(); // "Invalid request"
 
 // these are always generic — no parameters
 throw forbiddenError();
@@ -647,6 +652,7 @@ if (err instanceof ScheduleConflictError) {
 ```
 
 `AffectedSchedule` type lives in `packages/types/common.ts`:
+
 ```ts
 export type AffectedSchedule = {
   scheduleId: string;
@@ -689,10 +695,12 @@ if (!ingredient) throw notFoundError();
 ```
 
 **404 vs 400 distinction — important:**
+
 - `notFoundError()` is for the **resource being operated on** — the entity identified by the route param (e.g. `id` in `PATCH /recipes/:id`). If that resource doesn't exist, return 404.
 - `invalidRequestError()` is for **invalid values in the request body** — if the client sends IDs in the body (e.g. `dishTypeIds`, `mealTypeIds`, `ingredientIds`) that don't exist in the DB, that is a bad request, not a 404. Return 400.
 
 Example:
+
 ```ts
 // correct
 const recipe = await getRecipeById(prisma, id, workspaceId);
@@ -860,23 +868,23 @@ Pending: `schedules`, `schedule-meals`, `users`, `permissions`
 
 Key models and their workspace-scoped fields:
 
-| Model               | Unique constraint                 | Notes                                                                                                                                                                                                                                                                    |
-| ------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `Ingredient`        | `(workspace_id, name)`            | Has `IngredientVariant` children. `category String?` — null treated as `other` on the FE. Block delete if referenced by any `RecipeIngredient`.                                                                                                                         |
-| `IngredientVariant` | `(workspace_id, variant)`         | Scoped to workspace. Field is `variant` (not `alias`). Relation on `Ingredient` is `ingredient_variants`. Covers both name variants (aubergine = eggplant) and ingredient-family variants (chicken breast → chicken). Both treated identically for gap calculation.      |
-| `DishType`          | `(workspace_id, name)`            |                                                                                                                                                                                                                                                                          |
-| `MealType`          | `(workspace_id, name)`            | Simple lookup — name only. No order field. No dish constraints directly on this model.                                                                                                                                                                                   |
-| `WeekDaysLayout`    | none                              | Belongs to a `Schedule` (not workspace directly). `days Int[]` — array of day-of-week ints (0=Sunday, 6=Saturday) covered by this layout.                                                                                                                               |
-| `MealSlot`          | `(week_days_layout_id, order)`    | Belongs to `WeekDaysLayout`. `order` derived from array index when creating/reordering. Linked to a `MealType`.                                                                                                                                                          |
-| `DishAllocation`    | `(meal_slot_id, dish_type_id)`    | Belongs to `MealSlot`. `amount Int` — how many of this dish type are required in this slot.                                                                                                                                                                              |
-| `Recipe`            | `(workspace_id, name)`            | Has `RecipeIngredient`, `RecipeMealType`, `RecipeDishType`. Must have at least one dish type and at least one meal type. Block delete if referenced by any `MealRecipe` (return 409 with affected schedule names and dates). Cascade deletes `RecipeIngredient`, `RecipeDishType`, `RecipeMealType` on delete. |
-| `RecipeIngredient`  | `(recipe_id, ingredient_id)`      | `is_main` must be exactly 1 per recipe — enforced in service, throw `ruleViolationError()` if violated. `display_name String?` stores the variant name the user typed — falls back to `Ingredient.name` on read if null. `onDelete: Cascade` from `Recipe`.            |
-| `RecipeDishType`    | `(recipe_id, dish_type_id)`       | Join table. `onDelete: Cascade` from `Recipe`.                                                                                                                                                                                                                           |
-| `RecipeMealType`    | `(recipe_id, meal_type_id)`       | Join table. `onDelete: Cascade` from `Recipe`.                                                                                                                                                                                                                           |
-| `Unit`              | `(name)`                          | Global table — no `workspace_id`. Never scope `Unit` queries by workspace. Seeded once globally, never created or deleted via the API.                                                                                                                                   |
-| `Schedule`          | `(workspace_id, name)`            | Has `ScheduleDay`, `GenerationSetting`, `WeekDaysLayout[]`                                                                                                                                                                                                               |
-| `ScheduleMeal`      | `(schedule_day_id, meal_type_id)` | Has `MealRecipe` children                                                                                                                                                                                                                                                |
-| `WorkspaceUser`     | `(user_id, workspace_id)`         | Join table with role                                                                                                                                                                                                                                                     |
+| Model               | Unique constraint                 | Notes                                                                                                                                                                                                                                                                                                                                |
+| ------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Ingredient`        | `(workspace_id, name)`            | Has `IngredientVariant` children. `category String?` — null treated as `other` on the FE. Block delete if referenced by any `RecipeIngredient`.                                                                                                                                                                                      |
+| `IngredientVariant` | `(workspace_id, variant)`         | Scoped to workspace. Field is `variant` (not `alias`). Relation on `Ingredient` is `ingredient_variants`. Covers both name variants (aubergine = eggplant) and ingredient-family variants (chicken breast → chicken). Both treated identically for gap calculation.                                                                  |
+| `DishType`          | `(workspace_id, name)`            |                                                                                                                                                                                                                                                                                                                                      |
+| `MealType`          | `(workspace_id, name)`            | Simple lookup — name only. No order field. No dish constraints directly on this model.                                                                                                                                                                                                                                               |
+| `WeekDaysLayout`    | none                              | Belongs to a `Schedule` (not workspace directly). `days Int[]` — array of day-of-week ints (0=Sunday, 6=Saturday) covered by this layout.                                                                                                                                                                                            |
+| `MealSlot`          | `(week_days_layout_id, order)`    | Belongs to `WeekDaysLayout`. `order` derived from array index when creating/reordering. Linked to a `MealType`.                                                                                                                                                                                                                      |
+| `DishAllocation`    | `(meal_slot_id, dish_type_id)`    | Belongs to `MealSlot`. `amount Int` — how many of this dish type are required in this slot. `order Int` — display order within the slot, derived from array index on write (same pattern as `MealSlot.order`). Never returned to the frontend — sort by `order` on read and return a plain array. `@@unique([meal_slot_id, order])`. |
+| `Recipe`            | `(workspace_id, name)`            | Has `RecipeIngredient`, `RecipeMealType`, `RecipeDishType`. Must have at least one dish type and at least one meal type. Block delete if referenced by any `MealRecipe` (return 409 with affected schedule names and dates). Cascade deletes `RecipeIngredient`, `RecipeDishType`, `RecipeMealType` on delete.                       |
+| `RecipeIngredient`  | `(recipe_id, ingredient_id)`      | `is_main` must be exactly 1 per recipe — enforced in service, throw `ruleViolationError()` if violated. `display_name String?` stores the variant name the user typed — falls back to `Ingredient.name` on read if null. `onDelete: Cascade` from `Recipe`.                                                                          |
+| `RecipeDishType`    | `(recipe_id, dish_type_id)`       | Join table. `onDelete: Cascade` from `Recipe`.                                                                                                                                                                                                                                                                                       |
+| `RecipeMealType`    | `(recipe_id, meal_type_id)`       | Join table. `onDelete: Cascade` from `Recipe`.                                                                                                                                                                                                                                                                                       |
+| `Unit`              | `(name)`                          | Global table — no `workspace_id`. Never scope `Unit` queries by workspace. Seeded once globally, never created or deleted via the API.                                                                                                                                                                                               |
+| `Schedule`          | `(workspace_id, name)`            | Has `ScheduleDay`, `GenerationSetting`, `WeekDaysLayout[]`                                                                                                                                                                                                                                                                           |
+| `ScheduleMeal`      | `(schedule_day_id, meal_type_id)` | Has `MealRecipe` children                                                                                                                                                                                                                                                                                                            |
+| `WorkspaceUser`     | `(user_id, workspace_id)`         | Join table with role                                                                                                                                                                                                                                                                                                                 |
 
 ### Removed models
 
@@ -967,8 +975,12 @@ const signToken = (app: ReturnType<typeof Fastify>) =>
 describe('GET /ingredients', () => {
   let app: Awaited<ReturnType<typeof buildApp>>;
 
-  beforeEach(async () => { app = await buildApp(); });
-  afterEach(async () => { await app.close(); });
+  beforeEach(async () => {
+    app = await buildApp();
+  });
+  afterEach(async () => {
+    await app.close();
+  });
 
   it('returns 200 with data', async () => {
     vi.mocked(service.listIngredients).mockResolvedValue({
@@ -1009,7 +1021,10 @@ vi.mock('../ingredients.repository');
 describe('fetchIngredientById', () => {
   it('returns ingredient when found', async () => {
     vi.mocked(repo.getIngredientById).mockResolvedValue({
-      id: '1', name: 'Salt', category: 'spices', workspace_id: 'ws-1',
+      id: '1',
+      name: 'Salt',
+      category: 'spices',
+      workspace_id: 'ws-1',
     });
     const result = await fetchIngredientById({} as any, '1', 'ws-1');
     expect(result.name).toBe('Salt');
@@ -1069,26 +1084,26 @@ export default defineConfig({
 
 Use the following reserved module prefixes:
 
-| Module | Prefix |
-|--------|--------|
-| `ingredients` | `00000000-0000-0000-0001-` |
-| `dish-types` | `00000000-0000-0000-0002-` |
-| `meal-types` | `00000000-0000-0000-0003-` |
-| `layouts` | `00000000-0000-0000-0004-` |
-| `recipes` | `00000000-0000-0000-0005-` |
-| `schedules` | `00000000-0000-0000-0006-` |
+| Module           | Prefix                     |
+| ---------------- | -------------------------- |
+| `ingredients`    | `00000000-0000-0000-0001-` |
+| `dish-types`     | `00000000-0000-0000-0002-` |
+| `meal-types`     | `00000000-0000-0000-0003-` |
+| `layouts`        | `00000000-0000-0000-0004-` |
+| `recipes`        | `00000000-0000-0000-0005-` |
+| `schedules`      | `00000000-0000-0000-0006-` |
 | `schedule-meals` | `00000000-0000-0000-0007-` |
-| `users` | `00000000-0000-0000-0008-` |
-| `permissions` | `00000000-0000-0000-0009-` |
+| `users`          | `00000000-0000-0000-0008-` |
+| `permissions`    | `00000000-0000-0000-0009-` |
 
 Within a module, assign a unique last segment per entity type:
 
 ```typescript
 // recipes module example
-const WS_ID =   '00000000-0000-0000-0005-000000000001';
-const DT_ID =   '00000000-0000-0000-0005-000000000002';
-const MT_ID =   '00000000-0000-0000-0005-000000000003';
-const ING_ID =  '00000000-0000-0000-0005-000000000004';
+const WS_ID = '00000000-0000-0000-0005-000000000001';
+const DT_ID = '00000000-0000-0000-0005-000000000002';
+const MT_ID = '00000000-0000-0000-0005-000000000003';
+const ING_ID = '00000000-0000-0000-0005-000000000004';
 const SCHED_ID = '00000000-0000-0000-0005-000000000005';
 ```
 
@@ -1104,7 +1119,7 @@ const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
 });
 
-const WS_ID =  '00000000-0000-0000-0001-000000000001';
+const WS_ID = '00000000-0000-0000-0001-000000000001';
 const ING_ID = '00000000-0000-0000-0001-000000000002';
 
 beforeAll(async () => {

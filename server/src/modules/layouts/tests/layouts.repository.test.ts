@@ -156,6 +156,40 @@ describe('createLayout', () => {
     const detail = await getLayoutById(prisma, result.id, WS_ID);
     expect(detail?.week_days_layouts[0].meal_slots[0].order).toBe(0);
   });
+
+  it('returns dishAllocations in insertion order', async () => {
+    const DT_ID_2 = '00000000-0000-0000-0004-000000000005';
+    await prisma.dishType.upsert({
+      where: { workspace_id_name: { workspace_id: WS_ID, name: 'Second Dish Type' } },
+      update: {},
+      create: { id: DT_ID_2, name: 'Second Dish Type', workspace_id: WS_ID },
+    });
+    const result = await createLayout(
+      prisma,
+      {
+        name: 'DA Order Test',
+        weekDaysLayouts: [
+          {
+            days: [0],
+            mealSlots: [
+              {
+                mealTypeId: MT_ID,
+                dishAllocations: [
+                  { dishTypeId: DT_ID, amount: 1 },
+                  { dishTypeId: DT_ID_2, amount: 2 },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      WS_ID,
+    );
+    const detail = await getLayoutById(prisma, result.id, WS_ID);
+    const allocations = detail?.week_days_layouts[0].meal_slots[0].dish_allocations;
+    expect(allocations?.[0].dish_type.id).toBe(DT_ID);
+    expect(allocations?.[1].dish_type.id).toBe(DT_ID_2);
+  });
 });
 
 describe('updateLayout', () => {
@@ -204,6 +238,41 @@ describe('cloneLayout', () => {
     const detail = await getLayoutById(prisma, cloned!.id, WS_ID);
     expect(detail?.week_days_layouts).toHaveLength(1);
     expect(detail?.week_days_layouts[0].meal_slots[0].dish_allocations[0].amount).toBe(2);
+  });
+
+  it('preserves dishAllocation order when cloning', async () => {
+    const DT_ID_2 = '00000000-0000-0000-0004-000000000005';
+    await prisma.dishType.upsert({
+      where: { workspace_id_name: { workspace_id: WS_ID, name: 'Second Dish Type' } },
+      update: {},
+      create: { id: DT_ID_2, name: 'Second Dish Type', workspace_id: WS_ID },
+    });
+    const source = await createLayout(
+      prisma,
+      {
+        name: 'Clone Order Source',
+        weekDaysLayouts: [
+          {
+            days: [0],
+            mealSlots: [
+              {
+                mealTypeId: MT_ID,
+                dishAllocations: [
+                  { dishTypeId: DT_ID, amount: 1 },
+                  { dishTypeId: DT_ID_2, amount: 2 },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      WS_ID,
+    );
+    const cloned = await cloneLayout(prisma, source.id, 'Clone Order', WS_ID);
+    const detail = await getLayoutById(prisma, cloned!.id, WS_ID);
+    const allocations = detail?.week_days_layouts[0].meal_slots[0].dish_allocations;
+    expect(allocations?.[0].dish_type.id).toBe(DT_ID);
+    expect(allocations?.[1].dish_type.id).toBe(DT_ID_2);
   });
 
   it('returns null for non-existent source', async () => {
