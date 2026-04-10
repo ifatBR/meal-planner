@@ -5,6 +5,7 @@ import {
   createRecipe,
   updateRecipe,
   deleteRecipe,
+  cloneRecipeById,
 } from '../recipes.service';
 import * as repo from '../recipes.repository';
 import * as dishTypeRepo from '../../dish-types/dish-types.repository';
@@ -243,6 +244,24 @@ describe('updateRecipe', () => {
     await expect(
       updateRecipe(mockPrisma, RECIPE_ID, WS_ID, { dishTypeIds: ['new-dt'] }),
     ).resolves.toBeDefined();
+  });
+});
+
+describe('cloneRecipeById', () => {
+  it('returns cloned recipe on success', async () => {
+    vi.mocked(repo.cloneRecipe).mockResolvedValue(mockRecipeRow);
+    const result = await cloneRecipeById(mockPrisma, RECIPE_ID, WS_ID, 'Clone');
+    expect(result.name).toBe('Test Recipe');
+  });
+
+  it('throws 404 when repository returns null', async () => {
+    vi.mocked(repo.cloneRecipe).mockResolvedValue(null);
+    await expect(cloneRecipeById(mockPrisma, RECIPE_ID, WS_ID, 'Clone')).rejects.toThrow();
+  });
+
+  it('throws conflictError on P2002', async () => {
+    vi.mocked(repo.cloneRecipe).mockRejectedValue({ code: 'P2002' });
+    await expect(cloneRecipeById(mockPrisma, RECIPE_ID, WS_ID, 'Clone')).rejects.toThrow();
   });
 });
 

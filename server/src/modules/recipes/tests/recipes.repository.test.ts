@@ -7,6 +7,7 @@ import {
   createRecipe,
   updateRecipe,
   deleteRecipe,
+  cloneRecipe,
   getRecipeMealRecipes,
 } from '../recipes.repository';
 
@@ -224,6 +225,33 @@ describe('deleteRecipe', () => {
     await deleteRecipe(prisma, created.id);
     const result = await getRecipeById(prisma, created.id, WS_ID);
     expect(result).toBeNull();
+  });
+});
+
+describe('cloneRecipe', () => {
+  it('clones recipe with all relations', async () => {
+    const source = await createRecipe(prisma, makeRecipeData(), WS_ID);
+    const cloned = await cloneRecipe(prisma, source.id, WS_ID, 'Cloned Recipe');
+    expect(cloned).not.toBeNull();
+    expect(cloned!.name).toBe('Cloned Recipe');
+    expect(cloned!.id).not.toBe(source.id);
+    expect(cloned!.recipe_dish_types).toHaveLength(1);
+    expect(cloned!.recipe_dish_types[0].dish_type.id).toBe(DT_ID);
+    expect(cloned!.recipe_meal_types).toHaveLength(1);
+    expect(cloned!.recipe_meal_types[0].meal_type.id).toBe(MT_ID);
+    expect(cloned!.recipe_ingredients).toHaveLength(1);
+    expect(cloned!.recipe_ingredients[0].is_main).toBe(true);
+  });
+
+  it('returns null when source recipe not found', async () => {
+    const result = await cloneRecipe(prisma, '00000000-0000-0000-0000-999999999999', WS_ID, 'Clone');
+    expect(result).toBeNull();
+  });
+
+  it('throws on duplicate name in workspace', async () => {
+    const source = await createRecipe(prisma, makeRecipeData(), WS_ID);
+    await createRecipe(prisma, { ...makeRecipeData(), name: 'Existing Clone' }, WS_ID);
+    await expect(cloneRecipe(prisma, source.id, WS_ID, 'Existing Clone')).rejects.toThrow();
   });
 });
 

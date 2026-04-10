@@ -6,6 +6,8 @@ import {
   UpdateRecipeParamsSchema,
   UpdateRecipeBodySchema,
   DeleteRecipeParamsSchema,
+  CloneRecipeParamsSchema,
+  CloneRecipeBodySchema,
 } from '@app/types/recipes';
 import {
   listRecipes,
@@ -13,6 +15,7 @@ import {
   createRecipe,
   updateRecipe,
   deleteRecipe,
+  cloneRecipeById,
 } from './recipes.service';
 import { ScheduleConflictError } from '../../utils/errors';
 import { PERMISSIONS } from '../../constants';
@@ -109,6 +112,24 @@ async function recipeRoutes(fastify: FastifyInstance) {
         }
         throw err;
       }
+    },
+  );
+
+  fastify.post(
+    '/:id/clone',
+    {
+      preHandler: [fastify.authenticate, fastify.requirePermission(PERMISSIONS.RECIPES.CREATE)],
+    },
+    async (request, reply) => {
+      const params = CloneRecipeParamsSchema.parse(request.params);
+      const body = CloneRecipeBodySchema.parse(request.body);
+      const result = await cloneRecipeById(
+        fastify.prisma,
+        params.id,
+        request.user.workspaceId,
+        body.name,
+      );
+      return reply.status(201).send({ data: mapRecipeDetail(result) });
     },
   );
 

@@ -246,6 +246,81 @@ describe('PATCH /recipes/:id', () => {
   });
 });
 
+describe('POST /recipes/:id/clone', () => {
+  let app: Awaited<ReturnType<typeof buildApp>>;
+  beforeEach(async () => { app = await buildApp(); });
+  afterEach(async () => { await app.close(); });
+
+  it('returns 201 with cloned recipe', async () => {
+    vi.mocked(service.cloneRecipeById).mockResolvedValue({ ...mockRecipeRow, name: 'Clone' });
+    const res = await app.inject({
+      method: 'POST',
+      url: `/recipes/${RECIPE_ID}/clone`,
+      headers: { authorization: `Bearer ${signToken(app)}` },
+      payload: { name: 'Clone' },
+    });
+    expect(res.statusCode).toBe(201);
+    expect(res.json().data.name).toBe('Clone');
+  });
+
+  it('returns 404 when original recipe not found', async () => {
+    vi.mocked(service.cloneRecipeById).mockRejectedValue(
+      Object.assign(new Error('recipe not found'), { statusCode: 404 }),
+    );
+    const res = await app.inject({
+      method: 'POST',
+      url: `/recipes/${RECIPE_ID}/clone`,
+      headers: { authorization: `Bearer ${signToken(app)}` },
+      payload: { name: 'Clone' },
+    });
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('returns 409 when name already exists', async () => {
+    vi.mocked(service.cloneRecipeById).mockRejectedValue(
+      Object.assign(new Error('recipe already exists'), { statusCode: 409 }),
+    );
+    const res = await app.inject({
+      method: 'POST',
+      url: `/recipes/${RECIPE_ID}/clone`,
+      headers: { authorization: `Bearer ${signToken(app)}` },
+      payload: { name: 'Clone' },
+    });
+    expect(res.statusCode).toBe(409);
+  });
+
+  it('returns 400 for missing name', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: `/recipes/${RECIPE_ID}/clone`,
+      headers: { authorization: `Bearer ${signToken(app)}` },
+      payload: {},
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('returns 401 without token', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: `/recipes/${RECIPE_ID}/clone`,
+      payload: { name: 'Clone' },
+    });
+    expect(res.statusCode).toBe(401);
+  });
+
+  it('returns 403 when user lacks permission', async () => {
+    const restricted = await buildApp(false);
+    const res = await restricted.inject({
+      method: 'POST',
+      url: `/recipes/${RECIPE_ID}/clone`,
+      headers: { authorization: `Bearer ${signToken(restricted)}` },
+      payload: { name: 'Clone' },
+    });
+    await restricted.close();
+    expect(res.statusCode).toBe(403);
+  });
+});
+
 describe('DELETE /recipes/:id', () => {
   let app: Awaited<ReturnType<typeof buildApp>>;
   beforeEach(async () => { app = await buildApp(); });

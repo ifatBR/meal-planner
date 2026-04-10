@@ -118,6 +118,9 @@ A day belongs to exactly one `WeekDaysLayout` per layout — enforced in the ser
 ### MealSlot order
 `order` on `MealSlot` is derived from the array index when the client sends meal slots. The client sends a full ordered array — the server assigns `order = index`. Reordering is handled via PATCH with a full `weekDaysLayouts` array — order is re-derived from index. No separate reorder endpoint. PATCH performs wholesale replacement: if `weekDaysLayouts` is provided, all existing records are deleted and recreated in a transaction.
 
+### DishAllocation order
+`order` on `DishAllocation` follows the same pattern as `MealSlot.order` — derived from array index on write, never trusted from the client at DB level. Used only for sorting on read. Never included in response payloads — backend returns a plain ordered array.
+
 ### Layouts use SCHEDULES permissions
 There is no separate `layouts` permission. Layout write endpoints use `PERMISSIONS.SCHEDULES.UPDATE` — editing a layout is considered editing the schedule.
 
@@ -176,3 +179,58 @@ The permissions system is fully implemented in the DB and the `requirePermission
 - Registration / workspace bootstrap script or simple internal screen
 - Users module (admin only)
 - Permissions module (admin only — UI deferred)
+
+---
+
+## Frontend
+
+### Stack
+Vite + React + TypeScript, TanStack Query, React Router v6, Context API for shared state. No Zustand, no Next.js. Justified by app simplicity — logged-in SaaS with no SSR needs.
+
+### Routing structure
+Settings is not a menu item — accessed only from the schedule list or from inside the calendar. Menu items: Library, Schedules only.
+
+Routes:
+- `/login` — public only
+- `/library` — tabs: Meal Types, Dish Types, Ingredients, Recipes, Layouts
+- `/schedules` — schedule list
+- `/schedules/:id/settings` — schedule settings, entry point tracked via `?returnTo=calendar&anchorDate=YYYY-MM-DD`
+- `/schedules/:id/calendar` — generated schedule calendar view
+
+### Onboarding flow
+On app load, 5 parallel calls are made: meal types, dish types, layouts, recipes, schedules. If any are empty, user is guided through the gaps in order: meal types → dish types → layouts → recipes → schedule list. Ingredients are skipped (seeded on workspace creation). No modal — inline empty state prompts only.
+
+### Calendar anchor date
+Default anchor on first open is `startDate` of the schedule. Always resets to `startDate` on re-entry for MVP. Remembering last viewed position is post-MVP (only if proven to add real UX value).
+
+### Manual edit behavior
+First manual edit on a generated schedule shows a one-time toast: "You've manually edited this schedule, click here to regenerate." Plus a second brief toast: "Consider locking edited meals to protect them from regeneration." After that, a persistent banner is shown at the top of the calendar. No repeat prompts. `isManuallyEdited` flag on `ScheduleMeal` drives all of this.
+
+### Lock whole day
+Skipped for MVP. Users lock meals individually. Revisit based on user feedback.
+
+### Draft settings
+Not supported in MVP. Settings only persist after generation. If user leaves settings without generating, inputs are lost.
+
+### is_allow_same_day_ing
+Field kept in DB, hidden from UI in MVP. Revisit if per-dish-type gap settings are added post-MVP.
+
+### Recipe clone endpoint
+To be added to the backend before frontend build starts. Duplicates recipe + all RecipeIngredient, RecipeDishType, RecipeMealType records. New name: "{original name} (copy)".
+
+### DishAllocation order
+`order Int` field added to `DishAllocation`. Derived from array index on write, same pattern as `MealSlot.order`. Never returned to frontend — backend sorts by `order` and returns a plain ordered array.
+
+### Week navigation
+Calendar navigates by full weeks only. Week always anchored to Sunday. Week picker at top of calendar allows jumping to any week within the schedule's date range — selected date snaps to its Sunday.
+
+---
+
+## Post-MVP Features (Frontend)
+
+- Remember last viewed calendar position per schedule
+- Send schedule to admin for approval before publishing
+- Lock whole day in calendar view
+- Per-dish-type gap settings (may resurrect `is_allow_same_day_ing` in granular form)
+- Permissions management UI (backend already implemented)
+- Users management UI

@@ -7,6 +7,7 @@ import {
   createRecipe as createRecipeRepo,
   updateRecipe as updateRecipeRepo,
   deleteRecipe as deleteRecipeRepo,
+  cloneRecipe as cloneRecipeRepo,
   getRecipeMealRecipes,
   getUnitsByNames,
 } from './recipes.repository';
@@ -211,6 +212,22 @@ export const updateRecipe = async (
       mealTypeIds: data.mealTypeIds,
       ingredients: resolvedIngredients,
     });
+  } catch (err) {
+    if (isP2002(err)) throw conflictError('recipe');
+    throw err;
+  }
+};
+
+export const cloneRecipeById = async (
+  prisma: PrismaClient,
+  id: string,
+  workspaceId: string,
+  name: string,
+) => {
+  try {
+    const result = await cloneRecipeRepo(prisma, id, workspaceId, name);
+    if (!result) throw notFoundError('recipe');
+    return result;
   } catch (err) {
     if (isP2002(err)) throw conflictError('recipe');
     throw err;

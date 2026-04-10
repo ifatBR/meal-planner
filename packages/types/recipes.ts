@@ -58,3 +58,13 @@ export const DeleteRecipeParamsSchema = z.object({
   id: z.string().uuid(),
 });
 export type DeleteRecipeParams = z.infer<typeof DeleteRecipeParamsSchema>;
+
+export const CloneRecipeParamsSchema = z.object({
+  id: z.string().uuid(),
+});
+export type CloneRecipeParams = z.infer<typeof CloneRecipeParamsSchema>;
+
+export const CloneRecipeBodySchema = z.object({
+  name: z.string().min(1).max(80),
+});
+export type CloneRecipeBody = z.infer<typeof CloneRecipeBodySchema>;

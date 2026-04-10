@@ -208,6 +208,59 @@ export const getRecipesForGeneration = async (prisma: PrismaClient, workspaceId:
   });
 };
 
+export const cloneRecipe = async (
+  prisma: PrismaClient,
+  id: string,
+  workspaceId: string,
+  name: string,
+) => {
+  return prisma.$transaction(async (tx) => {
+    const source = await tx.recipe.findFirst({
+      where: { id, workspace_id: workspaceId },
+      select: {
+        instructions: true,
+        recipe_dish_types: { select: { dish_type_id: true } },
+        recipe_meal_types: { select: { meal_type_id: true } },
+        recipe_ingredients: {
+          select: {
+            ingredient_id: true,
+            display_name: true,
+            is_main: true,
+            amount: true,
+            unit_id: true,
+          },
+        },
+      },
+    });
+
+    if (!source) return null;
+
+    return tx.recipe.create({
+      data: {
+        name,
+        instructions: source.instructions,
+        workspace_id: workspaceId,
+        recipe_dish_types: {
+          create: source.recipe_dish_types.map((rdt) => ({ dish_type_id: rdt.dish_type_id })),
+        },
+        recipe_meal_types: {
+          create: source.recipe_meal_types.map((rmt) => ({ meal_type_id: rmt.meal_type_id })),
+        },
+        recipe_ingredients: {
+          create: source.recipe_ingredients.map((ri) => ({
+            ingredient_id: ri.ingredient_id,
+            display_name: ri.display_name,
+            is_main: ri.is_main,
+            amount: ri.amount,
+            unit_id: ri.unit_id,
+          })),
+        },
+      },
+      select: recipeSelect,
+    });
+  });
+};
+
 export const getRecipesByIds = async (
   prisma: PrismaClient,
   ids: string[],
