@@ -14,10 +14,11 @@ const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }),
 });
 
-const WS_ID =    '00000000-0000-0000-0004-000000000001';
-const MT_ID =    '00000000-0000-0000-0004-000000000002';
-const DT_ID =    '00000000-0000-0000-0004-000000000003';
+const WS_ID = '00000000-0000-0000-0004-000000000001';
+const MT_ID = '00000000-0000-0000-0004-000000000002';
+const DT_ID = '00000000-0000-0000-0004-000000000003';
 const SCHED_ID = '00000000-0000-0000-0004-000000000004';
+const MT_COLOR = '#AEE553';
 
 const validWeekDaysLayouts = [
   {
@@ -40,7 +41,7 @@ beforeAll(async () => {
   await prisma.mealType.upsert({
     where: { workspace_id_name: { workspace_id: WS_ID, name: 'Test Meal Type' } },
     update: {},
-    create: { id: MT_ID, name: 'Test Meal Type', workspace_id: WS_ID },
+    create: { id: MT_ID, name: 'Test Meal Type', workspace_id: WS_ID, color: MT_COLOR },
   });
   await prisma.dishType.upsert({
     where: { workspace_id_name: { workspace_id: WS_ID, name: 'Test Dish Type' } },
@@ -102,7 +103,11 @@ describe('getLayouts', () => {
 
 describe('getLayoutById', () => {
   it('returns full detail with nested weekDaysLayouts', async () => {
-    const created = await createLayout(prisma, { name: 'Detail Layout', weekDaysLayouts: validWeekDaysLayouts }, WS_ID);
+    const created = await createLayout(
+      prisma,
+      { name: 'Detail Layout', weekDaysLayouts: validWeekDaysLayouts },
+      WS_ID,
+    );
     const result = await getLayoutById(prisma, created.id, WS_ID);
     expect(result?.id).toBe(created.id);
     expect(result?.week_days_layouts).toHaveLength(1);
@@ -116,7 +121,11 @@ describe('getLayoutById', () => {
   });
 
   it('returns null when layout belongs to a different workspace', async () => {
-    const created = await createLayout(prisma, { name: 'Other WS', weekDaysLayouts: validWeekDaysLayouts }, WS_ID);
+    const created = await createLayout(
+      prisma,
+      { name: 'Other WS', weekDaysLayouts: validWeekDaysLayouts },
+      WS_ID,
+    );
     const result = await getLayoutById(prisma, created.id, '00000000-0000-0000-0000-999999999999');
     expect(result).toBeNull();
   });
@@ -145,9 +154,7 @@ describe('createLayout', () => {
         weekDaysLayouts: [
           {
             days: [0],
-            mealSlots: [
-              { mealTypeId: MT_ID, dishAllocations: [{ dishTypeId: DT_ID, amount: 1 }] },
-            ],
+            mealSlots: [{ mealTypeId: MT_ID, dishAllocations: [{ dishTypeId: DT_ID, amount: 1 }] }],
           },
         ],
       },
@@ -194,13 +201,21 @@ describe('createLayout', () => {
 
 describe('updateLayout', () => {
   it('updates name only', async () => {
-    const layout = await createLayout(prisma, { name: 'Original', weekDaysLayouts: validWeekDaysLayouts }, WS_ID);
+    const layout = await createLayout(
+      prisma,
+      { name: 'Original', weekDaysLayouts: validWeekDaysLayouts },
+      WS_ID,
+    );
     const result = await updateLayout(prisma, layout.id, { name: 'Renamed' });
     expect(result.name).toBe('Renamed');
   });
 
   it('replaces weekDaysLayouts wholesale when provided', async () => {
-    const layout = await createLayout(prisma, { name: 'Layout', weekDaysLayouts: validWeekDaysLayouts }, WS_ID);
+    const layout = await createLayout(
+      prisma,
+      { name: 'Layout', weekDaysLayouts: validWeekDaysLayouts },
+      WS_ID,
+    );
     const newLayouts = [
       {
         days: [3, 4, 5, 6],
@@ -216,7 +231,11 @@ describe('updateLayout', () => {
 
 describe('deleteLayout', () => {
   it('deletes layout and cascades to weekDaysLayouts', async () => {
-    const layout = await createLayout(prisma, { name: 'To Delete', weekDaysLayouts: validWeekDaysLayouts }, WS_ID);
+    const layout = await createLayout(
+      prisma,
+      { name: 'To Delete', weekDaysLayouts: validWeekDaysLayouts },
+      WS_ID,
+    );
     await deleteLayout(prisma, layout.id);
     const result = await getLayoutById(prisma, layout.id, WS_ID);
     expect(result).toBeNull();
@@ -276,7 +295,12 @@ describe('cloneLayout', () => {
   });
 
   it('returns null for non-existent source', async () => {
-    const result = await cloneLayout(prisma, '00000000-0000-0000-0000-999999999999', 'Clone', WS_ID);
+    const result = await cloneLayout(
+      prisma,
+      '00000000-0000-0000-0000-999999999999',
+      'Clone',
+      WS_ID,
+    );
     expect(result).toBeNull();
   });
 });

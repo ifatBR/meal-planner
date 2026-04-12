@@ -22,6 +22,7 @@ const ING_ID = '00000000-0000-0000-0005-000000000004';
 const SCHED_ID = '00000000-0000-0000-0005-000000000005';
 const LAYOUT_ID = '00000000-0000-0000-0005-000000000006';
 const UNIT_NAME = 'grams-test';
+const MT_COLOR = '#AEE553';
 
 let unitId: string;
 
@@ -39,7 +40,7 @@ beforeAll(async () => {
   const mt = await prisma.mealType.upsert({
     where: { id: MT_ID },
     update: {},
-    create: { id: MT_ID, name: 'Lunch Test', workspace_id: WS_ID },
+    create: { id: MT_ID, name: 'Lunch Test', workspace_id: WS_ID, color: MT_COLOR },
   });
   const ing = await prisma.ingredient.upsert({
     where: { id: ING_ID },
@@ -244,7 +245,12 @@ describe('cloneRecipe', () => {
   });
 
   it('returns null when source recipe not found', async () => {
-    const result = await cloneRecipe(prisma, '00000000-0000-0000-0000-999999999999', WS_ID, 'Clone');
+    const result = await cloneRecipe(
+      prisma,
+      '00000000-0000-0000-0000-999999999999',
+      WS_ID,
+      'Clone',
+    );
     expect(result).toBeNull();
   });
 

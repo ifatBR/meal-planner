@@ -33,22 +33,23 @@ afterAll(async () => {
 });
 
 describe('createMealType', () => {
-  it('creates and returns meal type with id and name', async () => {
-    const result = await createMealType(prisma, { name: 'Breakfast' }, WS_ID);
+  it('creates and returns meal type with id, name, and color', async () => {
+    const result = await createMealType(prisma, { name: 'Breakfast', color: '#AEE553' }, WS_ID);
     expect(result.name).toBe('Breakfast');
     expect(result.id).toBeDefined();
+    expect(result.color).toBe('#AEE553');
   });
 });
 
 describe('getMealTypeById', () => {
   it('returns meal type scoped to workspace', async () => {
-    const created = await createMealType(prisma, { name: 'Lunch' }, WS_ID);
+    const created = await createMealType(prisma, { name: 'Lunch', color: '#AEE553' }, WS_ID);
     const result = await getMealTypeById(prisma, created.id, WS_ID);
     expect(result?.name).toBe('Lunch');
   });
 
   it('returns null for a different workspace', async () => {
-    const created = await createMealType(prisma, { name: 'Lunch' }, WS_ID);
+    const created = await createMealType(prisma, { name: 'Lunch', color: '#AEE553' }, WS_ID);
     const result = await getMealTypeById(prisma, created.id, OTHER_WS);
     expect(result).toBeNull();
   });
@@ -56,8 +57,8 @@ describe('getMealTypeById', () => {
 
 describe('listMealTypes', () => {
   it('returns all meal types ordered by name', async () => {
-    await createMealType(prisma, { name: 'Dinner' }, WS_ID);
-    await createMealType(prisma, { name: 'Breakfast' }, WS_ID);
+    await createMealType(prisma, { name: 'Dinner', color: '#AEE553' }, WS_ID);
+    await createMealType(prisma, { name: 'Breakfast', color: '#FF5733' }, WS_ID);
     const result = await listMealTypes(prisma, WS_ID);
     expect(result).toHaveLength(2);
     expect(result[0].name).toBe('Breakfast');
@@ -65,7 +66,7 @@ describe('listMealTypes', () => {
   });
 
   it('returns only meal types for the workspace', async () => {
-    await createMealType(prisma, { name: 'Breakfast' }, WS_ID);
+    await createMealType(prisma, { name: 'Breakfast', color: '#AEE553' }, WS_ID);
     const result = await listMealTypes(prisma, OTHER_WS);
     expect(result).toHaveLength(0);
   });
@@ -73,7 +74,7 @@ describe('listMealTypes', () => {
 
 describe('updateMealType', () => {
   it('updates meal type name', async () => {
-    const created = await createMealType(prisma, { name: 'Breakfast' }, WS_ID);
+    const created = await createMealType(prisma, { name: 'Breakfast', color: '#AEE553' }, WS_ID);
     const result = await updateMealType(prisma, created.id, { name: 'Brunch' });
     expect(result.name).toBe('Brunch');
   });
@@ -81,7 +82,7 @@ describe('updateMealType', () => {
 
 describe('deleteMealType', () => {
   it('deletes meal type so it cannot be found', async () => {
-    const created = await createMealType(prisma, { name: 'Snack' }, WS_ID);
+    const created = await createMealType(prisma, { name: 'Snack', color: '#AEE553' }, WS_ID);
     await deleteMealType(prisma, created.id);
     const result = await getMealTypeById(prisma, created.id, WS_ID);
     expect(result).toBeNull();

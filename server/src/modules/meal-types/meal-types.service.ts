@@ -15,12 +15,15 @@ export const listMealTypes = async (prisma: PrismaClient, workspaceId: string) =
 
 export const createMealType = async (
   prisma: PrismaClient,
-  data: { name: string },
+  data: { name: string; color: string },
   workspaceId: string,
 ) => {
   try {
-    const normalizedData = { name: data.name.trim().toLowerCase() };
-    return await createMealTypeRepo(prisma, normalizedData, workspaceId);
+    return await createMealTypeRepo(
+      prisma,
+      { name: data.name.trim().toLowerCase(), color: data.color },
+      workspaceId,
+    );
   } catch (err) {
     if (isP2002(err)) throw conflictError('meal type');
     throw err;
@@ -31,14 +34,16 @@ export const updateMealType = async (
   prisma: PrismaClient,
   id: string,
   workspaceId: string,
-  data: { name: string },
+  data: { name?: string; color?: string },
 ) => {
   const mealType = await getMealTypeById(prisma, id, workspaceId);
   if (!mealType) throw notFoundError('meal type');
 
   try {
-    const normalizedData = { name: data.name.trim().toLowerCase() };
-    return await updateMealTypeRepo(prisma, id, normalizedData);
+    return await updateMealTypeRepo(prisma, id, {
+      ...(data.name !== undefined && { name: data.name.trim().toLowerCase() }),
+      ...(data.color !== undefined && { color: data.color }),
+    });
   } catch (err) {
     if (isP2002(err)) throw conflictError('meal type');
     throw err;

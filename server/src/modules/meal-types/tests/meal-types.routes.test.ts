@@ -12,9 +12,11 @@ const buildApp = async (grantPermission = true) => {
   const app = Fastify();
   app.decorate('prisma', {
     permission: {
-      findFirst: vi.fn().mockResolvedValue(
-        grantPermission ? { id: 'perm-1', domain: 'meal-types', key: 'create' } : null,
-      ),
+      findFirst: vi
+        .fn()
+        .mockResolvedValue(
+          grantPermission ? { id: 'perm-1', domain: 'meal-types', key: 'create' } : null,
+        ),
     },
   } as any);
   await app.register(errorHandler);
@@ -29,7 +31,8 @@ const signToken = (app: Awaited<ReturnType<typeof buildApp>>) =>
   app.jwt.sign({ userId: 'user-1', workspaceId: 'ws-1', role: 'admin' as const });
 
 const MT_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
-const mockMealType = { id: MT_ID, name: 'Breakfast' };
+const MT_COLOR = '#AEE553';
+const mockMealType = { id: MT_ID, name: 'Breakfast', color: MT_COLOR };
 
 describe('GET /meal-types', () => {
   let app: Awaited<ReturnType<typeof buildApp>>;
@@ -41,7 +44,7 @@ describe('GET /meal-types', () => {
   });
 
   it('returns 200 with data', async () => {
-    vi.mocked(service.listMealTypes).mockResolvedValue([mockMealType]);
+    vi.mocked(service.listMealTypes).mockResolvedValue([mockMealType] as any);
     const res = await app.inject({
       method: 'GET',
       url: '/meal-types',
@@ -68,15 +71,16 @@ describe('POST /meal-types', () => {
   });
 
   it('returns 201 with created meal type', async () => {
-    vi.mocked(service.createMealType).mockResolvedValue(mockMealType);
+    vi.mocked(service.createMealType).mockResolvedValue(mockMealType as any);
     const res = await app.inject({
       method: 'POST',
       url: '/meal-types',
       headers: { authorization: `Bearer ${signToken(app)}` },
-      payload: { name: 'Breakfast' },
+      payload: { name: 'Breakfast', color: MT_COLOR },
     });
     expect(res.statusCode).toBe(201);
     expect(res.json().data.name).toBe('Breakfast');
+    expect(res.json().data.color).toBe(MT_COLOR);
   });
 
   it('returns 400 for empty name', async () => {
@@ -84,7 +88,17 @@ describe('POST /meal-types', () => {
       method: 'POST',
       url: '/meal-types',
       headers: { authorization: `Bearer ${signToken(app)}` },
-      payload: { name: '' },
+      payload: { name: '', color: MT_COLOR },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('returns 400 when color is missing', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/meal-types',
+      headers: { authorization: `Bearer ${signToken(app)}` },
+      payload: { name: 'Breakfast' },
     });
     expect(res.statusCode).toBe(400);
   });
@@ -93,7 +107,7 @@ describe('POST /meal-types', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/meal-types',
-      payload: { name: 'Breakfast' },
+      payload: { name: 'Breakfast', color: MT_COLOR },
     });
     expect(res.statusCode).toBe(401);
   });
@@ -104,7 +118,7 @@ describe('POST /meal-types', () => {
       method: 'POST',
       url: '/meal-types',
       headers: { authorization: `Bearer ${signToken(restricted)}` },
-      payload: { name: 'Breakfast' },
+      payload: { name: 'Breakfast', color: MT_COLOR },
     });
     await restricted.close();
     expect(res.statusCode).toBe(403);
@@ -121,7 +135,11 @@ describe('PATCH /meal-types/:id', () => {
   });
 
   it('returns 200 with updated meal type', async () => {
-    vi.mocked(service.updateMealType).mockResolvedValue({ id: MT_ID, name: 'Lunch' });
+    vi.mocked(service.updateMealType).mockResolvedValue({
+      id: MT_ID,
+      name: 'Lunch',
+      color: MT_COLOR,
+    } as any);
     const res = await app.inject({
       method: 'PATCH',
       url: `/meal-types/${MT_ID}`,

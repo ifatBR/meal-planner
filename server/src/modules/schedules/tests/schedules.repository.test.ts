@@ -18,13 +18,14 @@ const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }),
 });
 
-const WS_ID =     '00000000-0000-0000-0006-000000000001';
-const MT_ID =     '00000000-0000-0000-0006-000000000002';
-const DT_ID =     '00000000-0000-0000-0006-000000000003';
+const WS_ID = '00000000-0000-0000-0006-000000000001';
+const MT_ID = '00000000-0000-0000-0006-000000000002';
+const DT_ID = '00000000-0000-0000-0006-000000000003';
 const LAYOUT_ID = '00000000-0000-0000-0006-000000000004';
-const SCHED_ID =  '00000000-0000-0000-0006-000000000005';
-const ING_ID =    '00000000-0000-0000-0006-000000000006';
+const SCHED_ID = '00000000-0000-0000-0006-000000000005';
+const ING_ID = '00000000-0000-0000-0006-000000000006';
 const RECIPE_ID = '00000000-0000-0000-0006-000000000007';
+const MT_COLOR = '#AEE553';
 
 beforeAll(async () => {
   await prisma.workspace.upsert({
@@ -35,7 +36,7 @@ beforeAll(async () => {
   await prisma.mealType.upsert({
     where: { workspace_id_name: { workspace_id: WS_ID, name: 'Test Meal Type' } },
     update: {},
-    create: { id: MT_ID, name: 'Test Meal Type', workspace_id: WS_ID },
+    create: { id: MT_ID, name: 'Test Meal Type', workspace_id: WS_ID, color: MT_COLOR },
   });
   await prisma.dishType.upsert({
     where: { workspace_id_name: { workspace_id: WS_ID, name: 'Test Dish Type' } },
@@ -78,8 +79,20 @@ describe('getSchedules', () => {
   it('returns paginated schedules for the workspace', async () => {
     await prisma.schedule.createMany({
       data: [
-        { name: 'Schedule A', workspace_id: WS_ID, layout_id: LAYOUT_ID, start_date: new Date('2026-01-01'), end_date: new Date('2026-02-01') },
-        { name: 'Schedule B', workspace_id: WS_ID, layout_id: LAYOUT_ID, start_date: new Date('2026-02-01'), end_date: new Date('2026-03-01') },
+        {
+          name: 'Schedule A',
+          workspace_id: WS_ID,
+          layout_id: LAYOUT_ID,
+          start_date: new Date('2026-01-01'),
+          end_date: new Date('2026-02-01'),
+        },
+        {
+          name: 'Schedule B',
+          workspace_id: WS_ID,
+          layout_id: LAYOUT_ID,
+          start_date: new Date('2026-02-01'),
+          end_date: new Date('2026-03-01'),
+        },
       ],
     });
     const result = await getSchedules(prisma, WS_ID, { page: 1, pageSize: 20 });
@@ -96,9 +109,27 @@ describe('getSchedules', () => {
   it('applies pagination correctly', async () => {
     await prisma.schedule.createMany({
       data: [
-        { name: 'Schedule A', workspace_id: WS_ID, layout_id: LAYOUT_ID, start_date: new Date('2026-01-01'), end_date: new Date('2026-02-01') },
-        { name: 'Schedule B', workspace_id: WS_ID, layout_id: LAYOUT_ID, start_date: new Date('2026-02-01'), end_date: new Date('2026-03-01') },
-        { name: 'Schedule C', workspace_id: WS_ID, layout_id: LAYOUT_ID, start_date: new Date('2026-03-01'), end_date: new Date('2026-04-01') },
+        {
+          name: 'Schedule A',
+          workspace_id: WS_ID,
+          layout_id: LAYOUT_ID,
+          start_date: new Date('2026-01-01'),
+          end_date: new Date('2026-02-01'),
+        },
+        {
+          name: 'Schedule B',
+          workspace_id: WS_ID,
+          layout_id: LAYOUT_ID,
+          start_date: new Date('2026-02-01'),
+          end_date: new Date('2026-03-01'),
+        },
+        {
+          name: 'Schedule C',
+          workspace_id: WS_ID,
+          layout_id: LAYOUT_ID,
+          start_date: new Date('2026-03-01'),
+          end_date: new Date('2026-04-01'),
+        },
       ],
     });
     const result = await getSchedules(prisma, WS_ID, { page: 2, pageSize: 2 });
@@ -109,8 +140,20 @@ describe('getSchedules', () => {
   it('filters by search term', async () => {
     await prisma.schedule.createMany({
       data: [
-        { name: 'Alpha Schedule', workspace_id: WS_ID, layout_id: LAYOUT_ID, start_date: new Date('2026-01-01'), end_date: new Date('2026-02-01') },
-        { name: 'Beta Schedule', workspace_id: WS_ID, layout_id: LAYOUT_ID, start_date: new Date('2026-02-01'), end_date: new Date('2026-03-01') },
+        {
+          name: 'Alpha Schedule',
+          workspace_id: WS_ID,
+          layout_id: LAYOUT_ID,
+          start_date: new Date('2026-01-01'),
+          end_date: new Date('2026-02-01'),
+        },
+        {
+          name: 'Beta Schedule',
+          workspace_id: WS_ID,
+          layout_id: LAYOUT_ID,
+          start_date: new Date('2026-02-01'),
+          end_date: new Date('2026-03-01'),
+        },
       ],
     });
     const result = await getSchedules(prisma, WS_ID, { page: 1, pageSize: 20, search: 'alpha' });
@@ -120,9 +163,18 @@ describe('getSchedules', () => {
 
   it('does not return schedules from other workspaces', async () => {
     await prisma.schedule.create({
-      data: { name: 'Schedule A', workspace_id: WS_ID, layout_id: LAYOUT_ID, start_date: new Date('2026-01-01'), end_date: new Date('2026-02-01') },
+      data: {
+        name: 'Schedule A',
+        workspace_id: WS_ID,
+        layout_id: LAYOUT_ID,
+        start_date: new Date('2026-01-01'),
+        end_date: new Date('2026-02-01'),
+      },
     });
-    const result = await getSchedules(prisma, '00000000-0000-0000-0000-999999999999', { page: 1, pageSize: 20 });
+    const result = await getSchedules(prisma, '00000000-0000-0000-0000-999999999999', {
+      page: 1,
+      pageSize: 20,
+    });
     expect(result.items).toHaveLength(0);
   });
 });
@@ -130,7 +182,14 @@ describe('getSchedules', () => {
 describe('getScheduleById', () => {
   it('returns schedule when found', async () => {
     await prisma.schedule.create({
-      data: { id: SCHED_ID, name: 'Test', workspace_id: WS_ID, layout_id: LAYOUT_ID, start_date: new Date('2026-03-01'), end_date: new Date('2026-04-01') },
+      data: {
+        id: SCHED_ID,
+        name: 'Test',
+        workspace_id: WS_ID,
+        layout_id: LAYOUT_ID,
+        start_date: new Date('2026-03-01'),
+        end_date: new Date('2026-04-01'),
+      },
     });
     const result = await getScheduleById(prisma, SCHED_ID, WS_ID);
     expect(result?.id).toBe(SCHED_ID);
@@ -144,7 +203,14 @@ describe('getScheduleById', () => {
 
   it('returns null when schedule belongs to a different workspace', async () => {
     await prisma.schedule.create({
-      data: { id: SCHED_ID, name: 'Test', workspace_id: WS_ID, layout_id: LAYOUT_ID, start_date: new Date('2026-03-01'), end_date: new Date('2026-04-01') },
+      data: {
+        id: SCHED_ID,
+        name: 'Test',
+        workspace_id: WS_ID,
+        layout_id: LAYOUT_ID,
+        start_date: new Date('2026-03-01'),
+        end_date: new Date('2026-04-01'),
+      },
     });
     const result = await getScheduleById(prisma, SCHED_ID, '00000000-0000-0000-0000-999999999999');
     expect(result).toBeNull();
@@ -154,25 +220,60 @@ describe('getScheduleById', () => {
 describe('getOverlappingSchedules', () => {
   it('returns overlapping schedules', async () => {
     await prisma.schedule.create({
-      data: { name: 'Existing', workspace_id: WS_ID, layout_id: LAYOUT_ID, start_date: new Date('2026-03-01'), end_date: new Date('2026-04-01') },
+      data: {
+        name: 'Existing',
+        workspace_id: WS_ID,
+        layout_id: LAYOUT_ID,
+        start_date: new Date('2026-03-01'),
+        end_date: new Date('2026-04-01'),
+      },
     });
-    const result = await getOverlappingSchedules(prisma, WS_ID, new Date('2026-03-15'), new Date('2026-05-01'));
+    const result = await getOverlappingSchedules(
+      prisma,
+      WS_ID,
+      new Date('2026-03-15'),
+      new Date('2026-05-01'),
+    );
     expect(result).toHaveLength(1);
   });
 
   it('returns empty when no overlap', async () => {
     await prisma.schedule.create({
-      data: { name: 'Existing', workspace_id: WS_ID, layout_id: LAYOUT_ID, start_date: new Date('2026-03-01'), end_date: new Date('2026-04-01') },
+      data: {
+        name: 'Existing',
+        workspace_id: WS_ID,
+        layout_id: LAYOUT_ID,
+        start_date: new Date('2026-03-01'),
+        end_date: new Date('2026-04-01'),
+      },
     });
-    const result = await getOverlappingSchedules(prisma, WS_ID, new Date('2026-05-01'), new Date('2026-06-01'));
+    const result = await getOverlappingSchedules(
+      prisma,
+      WS_ID,
+      new Date('2026-05-01'),
+      new Date('2026-06-01'),
+    );
     expect(result).toHaveLength(0);
   });
 
   it('excludes the schedule with excludeId', async () => {
     const sched = await prisma.schedule.create({
-      data: { id: SCHED_ID, name: 'Existing', workspace_id: WS_ID, layout_id: LAYOUT_ID, start_date: new Date('2026-03-01'), end_date: new Date('2026-04-01') },
+      data: {
+        id: SCHED_ID,
+        name: 'Existing',
+        workspace_id: WS_ID,
+        layout_id: LAYOUT_ID,
+        start_date: new Date('2026-03-01'),
+        end_date: new Date('2026-04-01'),
+      },
     });
-    const result = await getOverlappingSchedules(prisma, WS_ID, new Date('2026-03-15'), new Date('2026-05-01'), sched.id);
+    const result = await getOverlappingSchedules(
+      prisma,
+      WS_ID,
+      new Date('2026-03-15'),
+      new Date('2026-05-01'),
+      sched.id,
+    );
     expect(result).toHaveLength(0);
   });
 });
@@ -181,7 +282,12 @@ describe('createSchedule', () => {
   it('creates a schedule with correct fields', async () => {
     const result = await createSchedule(
       prisma,
-      { name: 'New', layoutId: LAYOUT_ID, startDate: new Date('2026-03-01'), endDate: new Date('2026-04-01') },
+      {
+        name: 'New',
+        layoutId: LAYOUT_ID,
+        startDate: new Date('2026-03-01'),
+        endDate: new Date('2026-04-01'),
+      },
       WS_ID,
     );
     expect(result.name).toBe('New');
@@ -192,7 +298,14 @@ describe('createSchedule', () => {
 describe('updateSchedule', () => {
   it('updates the schedule name', async () => {
     await prisma.schedule.create({
-      data: { id: SCHED_ID, name: 'Original', workspace_id: WS_ID, layout_id: LAYOUT_ID, start_date: new Date('2026-03-01'), end_date: new Date('2026-04-01') },
+      data: {
+        id: SCHED_ID,
+        name: 'Original',
+        workspace_id: WS_ID,
+        layout_id: LAYOUT_ID,
+        start_date: new Date('2026-03-01'),
+        end_date: new Date('2026-04-01'),
+      },
     });
     const result = await updateSchedule(prisma, SCHED_ID, { name: 'Renamed' });
     expect(result.name).toBe('Renamed');
@@ -202,7 +315,14 @@ describe('updateSchedule', () => {
 describe('deleteSchedule', () => {
   it('deletes the schedule', async () => {
     await prisma.schedule.create({
-      data: { id: SCHED_ID, name: 'To Delete', workspace_id: WS_ID, layout_id: LAYOUT_ID, start_date: new Date('2026-03-01'), end_date: new Date('2026-04-01') },
+      data: {
+        id: SCHED_ID,
+        name: 'To Delete',
+        workspace_id: WS_ID,
+        layout_id: LAYOUT_ID,
+        start_date: new Date('2026-03-01'),
+        end_date: new Date('2026-04-01'),
+      },
     });
     await deleteSchedule(prisma, SCHED_ID);
     const result = await getScheduleById(prisma, SCHED_ID, WS_ID);
@@ -213,7 +333,14 @@ describe('deleteSchedule', () => {
 describe('getScheduleSettings', () => {
   it('returns null when no settings saved', async () => {
     await prisma.schedule.create({
-      data: { id: SCHED_ID, name: 'Test', workspace_id: WS_ID, layout_id: LAYOUT_ID, start_date: new Date('2026-03-01'), end_date: new Date('2026-04-01') },
+      data: {
+        id: SCHED_ID,
+        name: 'Test',
+        workspace_id: WS_ID,
+        layout_id: LAYOUT_ID,
+        start_date: new Date('2026-03-01'),
+        end_date: new Date('2026-04-01'),
+      },
     });
     const result = await getScheduleSettings(prisma, SCHED_ID);
     expect(result).toBeNull();
@@ -221,7 +348,14 @@ describe('getScheduleSettings', () => {
 
   it('returns settings with blocked meals when saved', async () => {
     await prisma.schedule.create({
-      data: { id: SCHED_ID, name: 'Test', workspace_id: WS_ID, layout_id: LAYOUT_ID, start_date: new Date('2026-03-01'), end_date: new Date('2026-04-01') },
+      data: {
+        id: SCHED_ID,
+        name: 'Test',
+        workspace_id: WS_ID,
+        layout_id: LAYOUT_ID,
+        start_date: new Date('2026-03-01'),
+        end_date: new Date('2026-04-01'),
+      },
     });
     await prisma.generationSetting.create({
       data: {
@@ -242,21 +376,45 @@ describe('getScheduleSettings', () => {
 describe('getScheduleCalendar', () => {
   it('returns schedule days within range', async () => {
     await prisma.schedule.create({
-      data: { id: SCHED_ID, name: 'Test', workspace_id: WS_ID, layout_id: LAYOUT_ID, start_date: new Date('2026-03-01'), end_date: new Date('2026-04-01') },
+      data: {
+        id: SCHED_ID,
+        name: 'Test',
+        workspace_id: WS_ID,
+        layout_id: LAYOUT_ID,
+        start_date: new Date('2026-03-01'),
+        end_date: new Date('2026-04-01'),
+      },
     });
     await prisma.scheduleDay.create({
       data: { schedule_id: SCHED_ID, date: new Date('2026-03-05') },
     });
-    const result = await getScheduleCalendar(prisma, SCHED_ID, new Date('2026-03-01'), new Date('2026-03-31'));
+    const result = await getScheduleCalendar(
+      prisma,
+      SCHED_ID,
+      new Date('2026-03-01'),
+      new Date('2026-03-31'),
+    );
     expect(result).toHaveLength(1);
     expect(result[0].date.toISOString().split('T')[0]).toBe('2026-03-05');
   });
 
   it('returns empty when no days in range', async () => {
     await prisma.schedule.create({
-      data: { id: SCHED_ID, name: 'Test', workspace_id: WS_ID, layout_id: LAYOUT_ID, start_date: new Date('2026-03-01'), end_date: new Date('2026-04-01') },
+      data: {
+        id: SCHED_ID,
+        name: 'Test',
+        workspace_id: WS_ID,
+        layout_id: LAYOUT_ID,
+        start_date: new Date('2026-03-01'),
+        end_date: new Date('2026-04-01'),
+      },
     });
-    const result = await getScheduleCalendar(prisma, SCHED_ID, new Date('2026-03-01'), new Date('2026-03-31'));
+    const result = await getScheduleCalendar(
+      prisma,
+      SCHED_ID,
+      new Date('2026-03-01'),
+      new Date('2026-03-31'),
+    );
     expect(result).toHaveLength(0);
   });
 });
@@ -264,7 +422,14 @@ describe('getScheduleCalendar', () => {
 describe('getLockedMealsForSchedule', () => {
   it('returns locked meals with their recipes and main ingredient', async () => {
     await prisma.schedule.create({
-      data: { id: SCHED_ID, name: 'Test', workspace_id: WS_ID, layout_id: LAYOUT_ID, start_date: new Date('2026-03-01'), end_date: new Date('2026-04-01') },
+      data: {
+        id: SCHED_ID,
+        name: 'Test',
+        workspace_id: WS_ID,
+        layout_id: LAYOUT_ID,
+        start_date: new Date('2026-03-01'),
+        end_date: new Date('2026-04-01'),
+      },
     });
     const day = await prisma.scheduleDay.create({
       data: { schedule_id: SCHED_ID, date: new Date('2026-03-05') },
@@ -286,7 +451,14 @@ describe('getLockedMealsForSchedule', () => {
 
   it('does not return unlocked meals', async () => {
     await prisma.schedule.create({
-      data: { id: SCHED_ID, name: 'Test', workspace_id: WS_ID, layout_id: LAYOUT_ID, start_date: new Date('2026-03-01'), end_date: new Date('2026-04-01') },
+      data: {
+        id: SCHED_ID,
+        name: 'Test',
+        workspace_id: WS_ID,
+        layout_id: LAYOUT_ID,
+        start_date: new Date('2026-03-01'),
+        end_date: new Date('2026-04-01'),
+      },
     });
     const day = await prisma.scheduleDay.create({
       data: { schedule_id: SCHED_ID, date: new Date('2026-03-05') },
@@ -303,7 +475,14 @@ describe('getLockedMealsForSchedule', () => {
 describe('saveGenerationResult', () => {
   it('creates generation settings and schedule days with meals', async () => {
     await prisma.schedule.create({
-      data: { id: SCHED_ID, name: 'Test', workspace_id: WS_ID, layout_id: LAYOUT_ID, start_date: new Date('2026-03-01'), end_date: new Date('2026-04-01') },
+      data: {
+        id: SCHED_ID,
+        name: 'Test',
+        workspace_id: WS_ID,
+        layout_id: LAYOUT_ID,
+        start_date: new Date('2026-03-01'),
+        end_date: new Date('2026-04-01'),
+      },
     });
 
     await saveGenerationResult(prisma, {
@@ -318,7 +497,13 @@ describe('saveGenerationResult', () => {
       generatedDays: [
         {
           date: '2026-03-01',
-          meals: [{ mealTypeId: MT_ID, recipes: [{ recipeId: RECIPE_ID, dishTypeId: DT_ID }], isLocked: false }],
+          meals: [
+            {
+              mealTypeId: MT_ID,
+              recipes: [{ recipeId: RECIPE_ID, dishTypeId: DT_ID }],
+              isLocked: false,
+            },
+          ],
         },
       ],
     });
@@ -326,7 +511,12 @@ describe('saveGenerationResult', () => {
     const settings = await getScheduleSettings(prisma, SCHED_ID);
     expect(settings?.recipe_gap).toBe(3);
 
-    const days = await getScheduleCalendar(prisma, SCHED_ID, new Date('2026-03-01'), new Date('2026-04-01'));
+    const days = await getScheduleCalendar(
+      prisma,
+      SCHED_ID,
+      new Date('2026-03-01'),
+      new Date('2026-04-01'),
+    );
     expect(days).toHaveLength(1);
     expect(days[0].schedule_meals).toHaveLength(1);
     expect(days[0].schedule_meals[0].meal_recipes).toHaveLength(1);
@@ -334,14 +524,23 @@ describe('saveGenerationResult', () => {
 
   it('replaces settings on re-generation', async () => {
     await prisma.schedule.create({
-      data: { id: SCHED_ID, name: 'Test', workspace_id: WS_ID, layout_id: LAYOUT_ID, start_date: new Date('2026-03-01'), end_date: new Date('2026-04-01') },
+      data: {
+        id: SCHED_ID,
+        name: 'Test',
+        workspace_id: WS_ID,
+        layout_id: LAYOUT_ID,
+        start_date: new Date('2026-03-01'),
+        end_date: new Date('2026-04-01'),
+      },
     });
 
     await saveGenerationResult(prisma, {
       scheduleId: SCHED_ID,
       layoutId: LAYOUT_ID,
       settings: { recipeGap: 3, mainIngGap: 7, isAllowSameDayIng: false, blockedMeals: [] },
-      generatedDays: [{ date: '2026-03-01', meals: [{ mealTypeId: MT_ID, recipes: [], isLocked: false }] }],
+      generatedDays: [
+        { date: '2026-03-01', meals: [{ mealTypeId: MT_ID, recipes: [], isLocked: false }] },
+      ],
     });
 
     await saveGenerationResult(prisma, {
@@ -358,7 +557,14 @@ describe('saveGenerationResult', () => {
 
   it('does not delete locked meals on re-generation', async () => {
     await prisma.schedule.create({
-      data: { id: SCHED_ID, name: 'Test', workspace_id: WS_ID, layout_id: LAYOUT_ID, start_date: new Date('2026-03-01'), end_date: new Date('2026-04-01') },
+      data: {
+        id: SCHED_ID,
+        name: 'Test',
+        workspace_id: WS_ID,
+        layout_id: LAYOUT_ID,
+        start_date: new Date('2026-03-01'),
+        end_date: new Date('2026-04-01'),
+      },
     });
 
     // Create a locked meal manually

@@ -11,12 +11,13 @@ const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }),
 });
 
-const WS_ID =     '00000000-0000-0000-0007-000000000001';
-const MT_ID =     '00000000-0000-0000-0007-000000000002';
-const DT_ID =     '00000000-0000-0000-0007-000000000003';
+const WS_ID = '00000000-0000-0000-0007-000000000001';
+const MT_ID = '00000000-0000-0000-0007-000000000002';
+const DT_ID = '00000000-0000-0000-0007-000000000003';
 const LAYOUT_ID = '00000000-0000-0000-0007-000000000004';
-const SCHED_ID =  '00000000-0000-0000-0007-000000000005';
+const SCHED_ID = '00000000-0000-0000-0007-000000000005';
 const RECIPE_ID = '00000000-0000-0000-0007-000000000006';
+const MT_COLOR = '#AEE553';
 
 beforeAll(async () => {
   await prisma.workspace.upsert({
@@ -27,7 +28,7 @@ beforeAll(async () => {
   await prisma.mealType.upsert({
     where: { workspace_id_name: { workspace_id: WS_ID, name: 'Test Meal Type' } },
     update: {},
-    create: { id: MT_ID, name: 'Test Meal Type', workspace_id: WS_ID },
+    create: { id: MT_ID, name: 'Test Meal Type', workspace_id: WS_ID, color: MT_COLOR },
   });
   await prisma.dishType.upsert({
     where: { workspace_id_name: { workspace_id: WS_ID, name: 'Test Dish Type' } },
@@ -100,13 +101,21 @@ describe('getScheduleMealWithContext', () => {
   });
 
   it('returns null for non-existent meal', async () => {
-    const result = await getScheduleMealWithContext(prisma, '00000000-0000-0000-0000-999999999999', WS_ID);
+    const result = await getScheduleMealWithContext(
+      prisma,
+      '00000000-0000-0000-0000-999999999999',
+      WS_ID,
+    );
     expect(result).toBeNull();
   });
 
   it('returns null when meal belongs to a different workspace', async () => {
     const meal = await createTestMeal();
-    const result = await getScheduleMealWithContext(prisma, meal.id, '00000000-0000-0000-0000-999999999999');
+    const result = await getScheduleMealWithContext(
+      prisma,
+      meal.id,
+      '00000000-0000-0000-0000-999999999999',
+    );
     expect(result).toBeNull();
   });
 });

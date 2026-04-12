@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 
-const mealTypeSelect = { select: { id: true, name: true } };
+const mealTypeSelect = { select: { id: true, name: true, color: true } };
 
 export const listMealTypes = async (prisma: PrismaClient, workspaceId: string) => {
   return prisma.mealType.findMany({
@@ -23,11 +23,11 @@ export const getMealTypeById = async (
 
 export const createMealType = async (
   prisma: PrismaClient,
-  data: { name: string },
+  data: { name: string; color: string },
   workspaceId: string,
 ) => {
   return prisma.mealType.create({
-    data: { name: data.name, workspace_id: workspaceId },
+    data: { name: data.name, color: data.color, workspace_id: workspaceId },
     ...mealTypeSelect,
   });
 };
@@ -35,11 +35,14 @@ export const createMealType = async (
 export const updateMealType = async (
   prisma: PrismaClient,
   id: string,
-  data: { name: string },
+  data: { name?: string; color?: string },
 ) => {
   return prisma.mealType.update({
     where: { id },
-    data: { name: data.name },
+    data: {
+      ...(data.name !== undefined && { name: data.name }),
+      ...(data.color !== undefined && { color: data.color }),
+    },
     ...mealTypeSelect,
   });
 };

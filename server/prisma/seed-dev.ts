@@ -27,7 +27,11 @@ if (!WS_ID) {
 
 const DISH_TYPES = ['Main', 'Salad', 'Soup', 'Side', 'Dessert'];
 
-const MEAL_TYPES = ['Breakfast', 'Lunch', 'Dinner'];
+const MEAL_TYPES = [
+  { name: 'Breakfast', color: '#FFD93D' },
+  { name: 'Lunch', color: '#45C9B2' },
+  { name: 'Dinner', color: '#AEE553' },
+];
 
 // Ingredient names used by recipes — must already exist in the workspace
 const RECIPE_INGREDIENT_NAMES = [
@@ -72,13 +76,13 @@ async function seedDishTypes() {
 
 async function seedMealTypes() {
   console.log('Seeding meal types...');
-  for (const name of MEAL_TYPES) {
+  for (const mealType of MEAL_TYPES) {
     const mt = await prisma.mealType.upsert({
-      where: { workspace_id_name: { workspace_id: WS_ID!, name } },
+      where: { workspace_id_name: { workspace_id: WS_ID!, name: mealType.name } },
       update: {},
-      create: { workspace_id: WS_ID!, name },
+      create: { workspace_id: WS_ID!, name: mealType.name, color: mealType.color },
     });
-    ids.mealTypes[name] = mt.id;
+    ids.mealTypes[mealType.name] = mt.id;
   }
 }
 
