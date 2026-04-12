@@ -345,8 +345,8 @@ Base unit: 4px. All spacing is multiples of 4.
 ```css
 --radius-sm: 6px;   /* list rows, badges, tags */
 --radius-md: 8px;   /* inputs, small buttons */
---radius-lg: 14px;  /* buttons (primary), cards */
---radius-xl: 12px;  /* modals, large cards */
+--radius-lg: 12px;  /* buttons (primary), cards */
+--radius-xl: 14px;  /* modals, large cards */
 --radius-full: 9999px; /* pills, avatars */
 ```
 
