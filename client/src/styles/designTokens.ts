@@ -1,73 +1,101 @@
+const _green900 = "#02472E";
+const _green700 = "#03603d";
+const _green100 = "#E8F5E0";
+const _teal400 = "#45C9B2";
+const _teal300 = "#35b09b";
+const _teal100 = "#E0F7F4";
+const _lime400 = "#AEE553";
+const _lime600 = "#48C96D";
+const _red400 = "#FF6B6B";
+const _red300 = "#ff5252";
+const _yellow400 = "#FFD93D";
+const _purple400 = "#C77DFF";
+const _cyan400 = "#4FC3F7";
+const _pink400 = "#F48FB1";
+const _white = "#FFFFFF";
+const _gray50 = "#F8F8F8";
+const _gray100 = "#F5F5F5";
+const _gray200 = "#EEEEEE";
+const _gray300 = "#DDDDDD";
+const _gray500 = "#9E9E9E";
+const _gray600 = "#6B6B6B";
+const _gray900 = "#1A1A1A";
+
 export const COLORS = {
   primary: {
-    default: '#02472E',
-    hover: '#03603d',
-    light: '#E8F5E0',
+    default: _green900,
+    hover: _green700,
+    light: _green100,
   },
   secondary: {
-    default: '#45C9B2',
-    hover: '#35b09b',
-    light: '#E0F7F4',
+    default: _teal400,
+    hover: _teal300,
+    light: _teal100,
   },
   highlight: {
-    default: '#AEE553',
-    dark: '#48C96D',
+    default: _lime400,
+    dark: _lime600,
   },
   palette: {
-    1: '#AEE553',
-    2: '#45C9B2',
-    3: '#FF6B6B',
-    4: '#FFD93D',
-    5: '#C77DFF',
-    6: '#48C96D',
-    7: '#4FC3F7',
-    8: '#F48FB1',
+    1: _lime400,
+    2: _teal400,
+    3: _red400,
+    4: _yellow400,
+    5: _purple400,
+    6: _lime600,
+    7: _cyan400,
+    8: _pink400,
   },
   bg: {
-    base: '#F8F8F8',
-    surface: '#FFFFFF',
-    elevated: '#FFFFFF',
+    base: _gray50,
+    surface: _white,
+    elevated: _white,
   },
   text: {
-    primary: '#1A1A1A',
-    secondary: '#6B6B6B',
-    tertiary: '#9E9E9E',
-    inverse: '#FFFFFF',
+    primary: _gray900,
+    secondary: _gray600,
+    tertiary: _gray500,
+    inverse: _white,
   },
   border: {
-    default: '#EEEEEE',
-    strong: '#DDDDDD',
+    default: _gray200,
+    strong: _gray300,
   },
   semantic: {
-    error: '#FF6B6B',
-    warning: '#FFD93D',
-    success: '#48C96D',
-    info: '#4FC3F7',
-    errorBg: '#FFF0F0',
-    warningBg: '#FFFBEB',
-    successBg: '#F0FFF4',
-    infoBg: '#F0F9FF',
+    error: _red400,
+    warning: _yellow400,
+    success: _lime600,
+    info: _cyan400,
+    errorBg: "#FFF0F0",
+    warningBg: "#FFFBEB",
+    successBg: "#F0FFF4",
+    infoBg: "#F0F9FF",
   },
   sidebar: {
-    bg: '#FFFFFF',
-    itemActiveBg: '#AEE553',
-    itemActiveColor: '#02472E',
-    itemColor: '#6B6B6B',
-    itemHoverBg: '#F5F5F5',
+    bg: _white,
+    itemActiveBg: _lime400,
+    itemActiveColor: _green900,
+    itemColor: _gray600,
+    itemHoverBg: _gray100,
   },
   btn: {
-    primary: { bg: '#02472E', color: '#FFFFFF', hoverBg: '#03603d' },
-    secondary: { bg: 'transparent', color: '#02472E', border: '#02472E', hoverBg: '#E8F5E0' },
-    danger: { bg: '#FF6B6B', color: '#FFFFFF', hoverBg: '#ff5252' },
-    disabled: { bg: '#EEEEEE', color: '#9E9E9E' },
+    primary: { bg: _green900, color: _white, hoverBg: _green700 },
+    secondary: {
+      bg: "transparent",
+      color: _green900,
+      border: _green900,
+      hoverBg: _green100,
+    },
+    danger: { bg: _red400, color: _white, hoverBg: _red300 },
+    disabled: { bg: _gray200, color: _gray500 },
   },
   input: {
-    bg: '#FFFFFF',
-    border: '#DDDDDD',
-    borderFocus: '#02472E',
-    borderError: '#FF6B6B',
-    color: '#1A1A1A',
-    placeholder: '#9E9E9E',
+    bg: _white,
+    border: _gray300,
+    borderFocus: _green900,
+    borderError: _red400,
+    color: _gray900,
+    placeholder: _gray500,
   },
 } as const;
 
@@ -77,15 +105,15 @@ export const FONTS = {
 } as const;
 
 export const FONT_SIZES = {
-  xs: '11px',
-  sm: '12px',
-  md: '13px',
-  base: '14px',
-  lg: '16px',
-  xl: '18px',
-  '2xl': '22px',
-  '3xl': '28px',
-  '4xl': '36px',
+  xs: "11px",
+  sm: "12px",
+  md: "13px",
+  base: "14px",
+  lg: "16px",
+  xl: "18px",
+  "2xl": "22px",
+  "3xl": "28px",
+  "4xl": "36px",
 } as const;
 
 export const FONT_WEIGHTS = {
@@ -102,34 +130,34 @@ export const LINE_HEIGHTS = {
 } as const;
 
 export const SPACING = {
-  1: '4px',
-  2: '8px',
-  3: '12px',
-  4: '16px',
-  5: '20px',
-  6: '24px',
-  8: '32px',
-  10: '40px',
-  12: '48px',
-  16: '64px',
+  1: "4px",
+  2: "8px",
+  3: "12px",
+  4: "16px",
+  5: "20px",
+  6: "24px",
+  8: "32px",
+  10: "40px",
+  12: "48px",
+  16: "64px",
 } as const;
 
 export const RADII = {
-  sm: '6px',
-  md: '8px',
-  lg: '12px',
-  xl: '14px',
-  full: '9999px',
+  sm: "6px",
+  md: "8px",
+  lg: "12px",
+  xl: "14px",
+  full: "9999px",
 } as const;
 
 export const SHADOWS = {
-  sm: '0 1px 2px rgba(0,0,0,0.06)',
-  md: '0 2px 8px rgba(0,0,0,0.08)',
-  lg: '0 4px 16px rgba(0,0,0,0.10)',
-  sidebar: '1px 0 2px rgba(0,0,0,0.06)',
+  sm: "0 1px 2px rgba(0,0,0,0.06)",
+  md: "0 2px 8px rgba(0,0,0,0.08)",
+  lg: "0 4px 16px rgba(0,0,0,0.10)",
+  sidebar: "1px 0 2px rgba(0,0,0,0.06)",
 } as const;
 
 export const SIDEBAR = {
-  widthCollapsed: '56px',
-  widthExpanded: '220px',
+  widthCollapsed: "56px",
+  widthExpanded: "220px",
 } as const;
