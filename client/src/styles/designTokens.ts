@@ -161,3 +161,15 @@ export const SIDEBAR = {
   widthCollapsed: "56px",
   widthExpanded: "220px",
 } as const;
+
+export const ICON_SIZES = {
+  sm: 16,
+  md: 20,
+  lg: 24,
+} as const;
+
+export const Z_INDEX = {
+  sidebar: 100,
+  modal: 200,
+  toast: 9999,
+} as const;

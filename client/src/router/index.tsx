@@ -1,11 +1,12 @@
-import { createBrowserRouter, Navigate } from "react-router-dom";
-import { ROUTES } from "../utils/constants";
-import { ProtectedRoute } from "./ProtectedRoute";
-import { useAuth } from "../hooks/useAuth";
-import { LoginPage } from "../pages/login/LoginPage";
+import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { ROUTES } from '../utils/constants';
+import { ProtectedRoute } from './ProtectedRoute';
+import { AppLayout } from '../components/AppLayout';
+import { useAuth } from '../hooks/useAuth';
+import { LoginPage } from '../pages/login/LoginPage';
 
 const Placeholder = ({ name }: { name: string }) => (
-  <div style={{ padding: "2rem", fontFamily: "sans-serif" }}>{name}</div>
+  <div style={{ padding: '2rem', fontFamily: 'sans-serif' }}>{name}</div>
 );
 
 function LoginGuard() {
@@ -15,46 +16,23 @@ function LoginGuard() {
   return <LoginPage />;
 }
 
-export const router = createBrowserRouter([
+export const routeConfig = [
   { path: ROUTES.LOGIN, element: <LoginGuard /> },
   {
-    path: ROUTES.LIBRARY,
+    path: '/',
     element: (
       <ProtectedRoute>
-        <Placeholder name="Library" />
+        <AppLayout />
       </ProtectedRoute>
     ),
+    children: [
+      { index: true, element: <Navigate to={ROUTES.SCHEDULES} replace /> },
+      { path: ROUTES.LIBRARY, element: <Placeholder name="Library" /> },
+      { path: ROUTES.SCHEDULES, element: <Placeholder name="Schedules" /> },
+      { path: ROUTES.SCHEDULE_SETTINGS_PATTERN, element: <Placeholder name="Settings" /> },
+      { path: ROUTES.SCHEDULE_CALENDAR_PATTERN, element: <Placeholder name="Calendar" /> },
+    ],
   },
-  {
-    path: ROUTES.SCHEDULES,
-    element: (
-      <ProtectedRoute>
-        <Placeholder name="Schedules" />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: ROUTES.SCHEDULE_SETTINGS_PATTERN,
-    element: (
-      <ProtectedRoute>
-        <Placeholder name="Settings" />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: ROUTES.SCHEDULE_CALENDAR_PATTERN,
-    element: (
-      <ProtectedRoute>
-        <Placeholder name="Calendar" />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/",
-    element: (
-      <ProtectedRoute>
-        <Navigate to={ROUTES.SCHEDULES} replace />
-      </ProtectedRoute>
-    ),
-  },
-]);
+];
+
+export const router = createBrowserRouter(routeConfig);
