@@ -163,13 +163,14 @@ export const SIDEBAR = {
 } as const;
 
 export const BORDER_WIDTHS = {
-  none: '0px',
-  sm: '1px',
-  md: '2px',
-  lg: '4px',
+  none: "0px",
+  sm: "1px",
+  md: "2px",
+  lg: "4px",
 } as const;
 
 export const ICON_SIZES = {
+  xs: 14,
   sm: 16,
   md: 20,
   lg: 24,

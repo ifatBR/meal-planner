@@ -1,30 +1,34 @@
 import { useState } from "react";
 import { Box, Flex } from "@chakra-ui/react";
-import { Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/Button";
 import { BodyText } from "@/components/Typography";
 import { InlineEditInput } from "@/components/InlineEditInput";
 import { Tooltip } from "@/components/ui/tooltip";
-import { COLORS, RADII, SPACING } from "@/styles/designTokens";
+import { COLORS, ICON_SIZES, RADII, SPACING } from "@/styles/designTokens";
 
 interface EditableListItemProps {
   name: string;
+  nameDisplay?: React.ReactNode;
   color?: string;
   onSave: (newValue: string) => void;
   onDelete: () => void;
   deleteBlocked?: boolean;
   deleteBlockedReason?: string;
   inlineError?: string;
+  addButtonProps?: { tooltip: string; onClick?: () => void };
 }
 
 export function EditableListItem({
   name,
+  nameDisplay,
   color,
   onSave,
   onDelete,
   deleteBlocked = false,
   deleteBlockedReason,
   inlineError,
+  addButtonProps,
 }: EditableListItemProps) {
   const [editing, setEditing] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -77,7 +81,7 @@ export function EditableListItem({
               display="inline-block"
               w="100%"
             >
-              <BodyText>{name}</BodyText>
+              {nameDisplay ?? <BodyText>{name}</BodyText>}
             </Box>
           )}
         </Box>
@@ -87,6 +91,17 @@ export function EditableListItem({
           transition="opacity 0.15s ease"
           flexShrink={0}
         >
+          {addButtonProps && (
+            <Tooltip content={addButtonProps.tooltip}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={addButtonProps.onClick}
+              >
+                <Plus size={ICON_SIZES.xs} />{" "}
+              </Button>
+            </Tooltip>
+          )}
           <Tooltip
             content={
               deleteBlocked && deleteBlockedReason
@@ -106,7 +121,7 @@ export function EditableListItem({
                 onClick={deleteBlocked ? undefined : onDelete}
                 disabled={deleteBlocked}
               >
-                <Trash2 size={14} />
+                <Trash2 size={ICON_SIZES.xs} />
               </Button>
             </Box>
           </Tooltip>

@@ -1,4 +1,8 @@
-import type { MealTypeResponse } from "@app/types";
+import type {
+  MealTypeResponse,
+  CreateMealTypeInput,
+  UpdateMealTypeInput,
+} from "@app/types";
 import { API_BASE } from "../utils/constants";
 import { apiFetch } from "./apiClient";
 
@@ -11,10 +15,9 @@ export const fetchMealTypes = async (): Promise<MealTypeResponse[]> => {
   return data;
 };
 
-export const createMealType = async (params: {
-  name: string;
-  color: string;
-}): Promise<MealTypeResponse> => {
+export const createMealType = async (
+  params: CreateMealTypeInput,
+): Promise<MealTypeResponse> => {
   const res = await apiFetch(`${API_BASE}/meal-types`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -28,7 +31,7 @@ export const createMealType = async (params: {
 
 export const updateMealType = async (
   id: string,
-  params: { name: string },
+  params: UpdateMealTypeInput,
 ): Promise<MealTypeResponse> => {
   const res = await apiFetch(`${API_BASE}/meal-types/${id}`, {
     method: "PATCH",
