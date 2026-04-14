@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ChakraProvider } from '@chakra-ui/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { system } from '@/styles/theme';
 import { LibraryPage } from './LibraryPage';
 
@@ -9,10 +10,19 @@ vi.mock('./tabs/MealTypesTab', () => ({
   MealTypesTab: () => <div data-testid="meal-types-tab" />,
 }));
 
+vi.mock('./tabs/DishTypesTab', () => ({
+  DishTypesTab: () => <div data-testid="dish-types-tab" />,
+}));
+
 function renderPage() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   return render(
     <ChakraProvider value={system}>
-      <LibraryPage />
+      <QueryClientProvider client={queryClient}>
+        <LibraryPage />
+      </QueryClientProvider>
     </ChakraProvider>
   );
 }

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Box, Flex, Tabs } from '@chakra-ui/react';
 import { PageTitle } from '@/components/Typography';
 import { MealTypesTab } from './tabs/MealTypesTab';
+import { DishTypesTab } from './tabs/DishTypesTab';
 import {
   BORDER_WIDTHS,
   COLORS,
@@ -12,7 +13,7 @@ import {
 
 const TABS = [
   { label: 'Meal Types', content: <MealTypesTab /> },
-  { label: 'Dish Types', content: null },
+  { label: 'Dish Types', content: <DishTypesTab /> },
   { label: 'Ingredients', content: null },
   { label: 'Recipes', content: null },
   { label: 'Layouts', content: null },

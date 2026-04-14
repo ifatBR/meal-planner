@@ -47,6 +47,7 @@ export function EditableListItem({
         py={SPACING[2]}
         borderRadius={RADII.sm}
         bg={hovered ? COLORS.bg.base : "transparent"}
+        maxW="600px"
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         transition="background-color 0.15s ease"
@@ -87,10 +88,17 @@ export function EditableListItem({
           flexShrink={0}
         >
           <Tooltip
-            content={deleteBlocked && deleteBlockedReason ? deleteBlockedReason : "Delete"}
+            content={
+              deleteBlocked && deleteBlockedReason
+                ? deleteBlockedReason
+                : "Delete"
+            }
             positioning={{ placement: "top" }}
           >
-            <Box display="inline-block" cursor={deleteBlocked ? "not-allowed" : undefined}>
+            <Box
+              display="inline-block"
+              cursor={deleteBlocked ? "not-allowed" : undefined}
+            >
               <Button
                 variant="ghost"
                 size="sm"
