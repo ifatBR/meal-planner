@@ -4,6 +4,7 @@ import { ProtectedRoute } from './ProtectedRoute';
 import { AppLayout } from '../components/AppLayout';
 import { useAuth } from '../hooks/useAuth';
 import { LoginPage } from '../pages/login/LoginPage';
+import { LibraryPage } from '../pages/library/LibraryPage';
 
 const Placeholder = ({ name }: { name: string }) => (
   <div style={{ padding: '2rem', fontFamily: 'sans-serif' }}>{name}</div>
@@ -27,7 +28,7 @@ export const routeConfig = [
     ),
     children: [
       { index: true, element: <Navigate to={ROUTES.SCHEDULES} replace /> },
-      { path: ROUTES.LIBRARY, element: <Placeholder name="Library" /> },
+      { path: ROUTES.LIBRARY, element: <LibraryPage /> },
       { path: ROUTES.SCHEDULES, element: <Placeholder name="Schedules" /> },
       { path: ROUTES.SCHEDULE_SETTINGS_PATTERN, element: <Placeholder name="Settings" /> },
       { path: ROUTES.SCHEDULE_CALENDAR_PATTERN, element: <Placeholder name="Calendar" /> },

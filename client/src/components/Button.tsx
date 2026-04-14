@@ -1,10 +1,12 @@
 import { Button as ChakraButton, Spinner } from '@chakra-ui/react'
 import type { ButtonProps as ChakraButtonProps } from '@chakra-ui/react'
 import { COLORS, RADII, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/styles/designTokens'
+import { Tooltip } from '@/components/ui/tooltip'
 
 interface ButtonProps extends Omit<ChakraButtonProps, 'variant'> {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost'
   isLoading?: boolean
+  tooltip?: string
 }
 
 const variantStyles: Record<NonNullable<ButtonProps['variant']>, React.CSSProperties> = {
@@ -41,6 +43,7 @@ export function Button({
   disabled,
   children,
   style,
+  tooltip,
   onMouseEnter,
   onMouseLeave,
   ...rest
@@ -82,7 +85,7 @@ export function Button({
     onMouseLeave?.(e)
   }
 
-  return (
+  const button = (
     <ChakraButton
       {...rest}
       disabled={isDisabled}
@@ -100,4 +103,14 @@ export function Button({
       )}
     </ChakraButton>
   )
+
+  if (tooltip) {
+    return (
+      <Tooltip content={tooltip} positioning={{ placement: 'top' }}>
+        {button}
+      </Tooltip>
+    )
+  }
+
+  return button
 }

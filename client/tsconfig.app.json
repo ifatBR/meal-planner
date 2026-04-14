@@ -18,7 +18,9 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@app/types": ["../packages/types/index.ts"],
+      "@app/types/*": ["../packages/types/*"]
     },
     "types": ["vitest/globals", "@testing-library/jest-dom"]
   },

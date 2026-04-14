@@ -7,6 +7,25 @@ import { system } from '@/styles/theme';
 import { Sidebar } from './Sidebar';
 import { COLORS, SIDEBAR } from '@/styles/designTokens';
 
+const mockLogout = vi.fn();
+
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: () => ({
+    user: {
+      id: '1',
+      email: 'jane@example.com',
+      firstName: 'Jane',
+      lastName: 'Doe',
+      userName: 'janedoe',
+      role: 'user',
+    },
+    logout: mockLogout,
+    accessToken: 'token',
+    isLoading: false,
+    login: vi.fn(),
+  }),
+}));
+
 function renderSidebar(
   props: { isCollapsed: boolean; onToggle: () => void },
   initialPath = '/'
@@ -35,7 +54,7 @@ describe('Sidebar', () => {
     expect(onToggle).toHaveBeenCalledTimes(1);
   });
 
-  it('hides labels when collapsed', () => {
+  it('hides nav labels when collapsed', () => {
     renderSidebar({ isCollapsed: true, onToggle: vi.fn() });
     expect(screen.queryByText('Library')).not.toBeInTheDocument();
     expect(screen.queryByText('Schedules')).not.toBeInTheDocument();
@@ -70,5 +89,33 @@ describe('Sidebar', () => {
   it('uses expanded width when not collapsed', () => {
     renderSidebar({ isCollapsed: false, onToggle: vi.fn() });
     expect(screen.getByRole('navigation')).toHaveStyle({ width: SIDEBAR.widthExpanded });
+  });
+
+  it('shows user name and email when expanded', () => {
+    renderSidebar({ isCollapsed: false, onToggle: vi.fn() });
+    expect(screen.getByText('Jane Doe')).toBeInTheDocument();
+    expect(screen.getByText('jane@example.com')).toBeInTheDocument();
+  });
+
+  it('shows first initial in avatar when collapsed', () => {
+    renderSidebar({ isCollapsed: true, onToggle: vi.fn() });
+    expect(screen.getByText('J')).toBeInTheDocument();
+  });
+
+  it('shows Log out label when expanded', () => {
+    renderSidebar({ isCollapsed: false, onToggle: vi.fn() });
+    expect(screen.getByText('Log out')).toBeInTheDocument();
+  });
+
+  it('hides Log out label when collapsed', () => {
+    renderSidebar({ isCollapsed: true, onToggle: vi.fn() });
+    expect(screen.queryByText('Log out')).not.toBeInTheDocument();
+  });
+
+  it('calls logout when Log out is clicked', async () => {
+    const user = userEvent.setup();
+    renderSidebar({ isCollapsed: false, onToggle: vi.fn() });
+    await user.click(screen.getByRole('button', { name: /log out/i }));
+    expect(mockLogout).toHaveBeenCalledTimes(1);
   });
 });

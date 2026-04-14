@@ -162,6 +162,13 @@ export const SIDEBAR = {
   widthExpanded: "220px",
 } as const;
 
+export const BORDER_WIDTHS = {
+  none: '0px',
+  sm: '1px',
+  md: '2px',
+  lg: '4px',
+} as const;
+
 export const ICON_SIZES = {
   sm: 16,
   md: 20,

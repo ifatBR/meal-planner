@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { render } from '@testing-library/react';
@@ -7,6 +7,16 @@ import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { system } from '@/styles/theme';
 import { AppLayout } from './AppLayout';
 import { SIDEBAR } from '@/styles/designTokens';
+
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: () => ({
+    user: { id: '1', email: 'test@example.com', firstName: 'Test', lastName: 'User', userName: 'testuser', role: 'user' },
+    accessToken: 'token',
+    isLoading: false,
+    login: vi.fn(),
+    logout: vi.fn(),
+  }),
+}));
 
 function renderAppLayout(childContent = 'Page content') {
   const router = createMemoryRouter([

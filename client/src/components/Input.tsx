@@ -1,3 +1,4 @@
+import { forwardRef } from 'react'
 import { Input as ChakraInput } from '@chakra-ui/react'
 import type { InputProps as ChakraInputProps } from '@chakra-ui/react'
 import { COLORS, RADII, FONT_SIZES, FONTS, SPACING } from '@/styles/designTokens'
@@ -6,7 +7,10 @@ interface InputProps extends ChakraInputProps {
   isError?: boolean
 }
 
-export function Input({ isError = false, style, ...rest }: InputProps) {
+export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
+  { isError = false, style, ...rest },
+  ref,
+) {
   const inputStyle: React.CSSProperties = {
     backgroundColor: COLORS.input.bg,
     border: `1px solid ${isError ? COLORS.input.borderError : COLORS.input.border}`,
@@ -23,6 +27,7 @@ export function Input({ isError = false, style, ...rest }: InputProps) {
 
   return (
     <ChakraInput
+      ref={ref}
       {...rest}
       style={inputStyle}
       onFocus={(e) => {
@@ -39,4 +44,4 @@ export function Input({ isError = false, style, ...rest }: InputProps) {
       }}
     />
   )
-}
+})
