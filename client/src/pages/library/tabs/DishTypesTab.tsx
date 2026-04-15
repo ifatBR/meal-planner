@@ -14,6 +14,7 @@ import { InlineEditInput } from "@/components/InlineEditInput";
 import { BodyText } from "@/components/Typography";
 import { useToast } from "@/hooks/useToast";
 import { COLORS, SPACING } from "@/styles/designTokens";
+import { LoadingError } from "@/components/LoadingError";
 
 export function DishTypesTab() {
   const queryClient = useQueryClient();
@@ -111,17 +112,10 @@ export function DishTypesTab() {
   // ── Error ────────────────────────────────────────────────────────────────
   if (isError) {
     return (
-      <Flex
-        direction="column"
-        align="flex-start"
-        gap={SPACING[3]}
-        pt={SPACING[6]}
-      >
-        <BodyText secondary>Failed to load dish types.</BodyText>
-        <Button variant="secondary" size="sm" onClick={() => refetch()}>
-          Retry
-        </Button>
-      </Flex>
+      <LoadingError
+        message={"Failed to load dish types."}
+        onClick={() => refetch()}
+      />
     );
   }
 

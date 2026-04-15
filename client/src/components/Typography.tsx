@@ -1,9 +1,9 @@
-import type { ReactNode } from 'react'
-import { Heading, Text } from '@chakra-ui/react'
-import { COLORS, FONT_SIZES, FONT_WEIGHTS } from '@/styles/designTokens'
+import type { ReactNode } from "react";
+import { Heading, Text } from "@chakra-ui/react";
+import { COLORS, FONT_SIZES, FONT_WEIGHTS } from "@/styles/designTokens";
 
 interface ChildrenProps {
-  children: ReactNode
+  children: ReactNode;
 }
 
 export function PageTitle({ children }: ChildrenProps) {
@@ -12,14 +12,14 @@ export function PageTitle({ children }: ChildrenProps) {
       as="h1"
       style={{
         margin: 0,
-        fontSize: FONT_SIZES['2xl'],
+        fontSize: FONT_SIZES["2xl"],
         fontWeight: FONT_WEIGHTS.semibold,
         color: COLORS.text.primary,
       }}
     >
       {children}
     </Heading>
-  )
+  );
 }
 
 export function SectionTitle({ children }: ChildrenProps) {
@@ -35,11 +35,11 @@ export function SectionTitle({ children }: ChildrenProps) {
     >
       {children}
     </Heading>
-  )
+  );
 }
 
 interface BodyTextProps extends ChildrenProps {
-  secondary?: boolean
+  secondary?: boolean;
 }
 
 export function BodyText({ children, secondary = false }: BodyTextProps) {
@@ -54,7 +54,7 @@ export function BodyText({ children, secondary = false }: BodyTextProps) {
     >
       {children}
     </Text>
-  )
+  );
 }
 
 export function Caption({ children }: ChildrenProps) {
@@ -69,5 +69,5 @@ export function Caption({ children }: ChildrenProps) {
     >
       {children}
     </Text>
-  )
+  );
 }

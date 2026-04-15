@@ -4,8 +4,9 @@ const _green100 = "#E8F5E0";
 const _teal400 = "#45C9B2";
 const _teal300 = "#35b09b";
 const _teal100 = "#E0F7F4";
-const _lime400 = "#AEE553";
 const _lime600 = "#48C96D";
+const _lime400 = "#AEE553";
+const _lime200 = "#cff690";
 const _red400 = "#FF6B6B";
 const _red300 = "#ff5252";
 const _yellow400 = "#FFD93D";
@@ -33,18 +34,19 @@ export const COLORS = {
     light: _teal100,
   },
   highlight: {
-    default: _lime400,
     dark: _lime600,
+    default: _lime400,
+    secondary: _lime200,
+    tertiary: _teal100,
   },
   palette: {
-    1: _lime400,
-    2: _teal400,
-    3: _red400,
-    4: _yellow400,
-    5: _purple400,
-    6: _lime600,
-    7: _cyan400,
-    8: _pink400,
+    1: _teal400,
+    2: _red400,
+    3: _yellow400,
+    4: _purple400,
+    5: _lime600,
+    6: _cyan400,
+    7: _pink400,
   },
   bg: {
     base: _gray50,
@@ -170,6 +172,7 @@ export const BORDER_WIDTHS = {
 } as const;
 
 export const ICON_SIZES = {
+  xxs: 5,
   xs: 14,
   sm: 16,
   md: 20,

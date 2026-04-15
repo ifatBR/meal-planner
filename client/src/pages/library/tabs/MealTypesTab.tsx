@@ -15,6 +15,7 @@ import { BodyText } from "@/components/Typography";
 import { useToast } from "@/hooks/useToast";
 import { MEAL_TYPE_COLORS } from "@/utils/constants";
 import { RADII, SPACING } from "@/styles/designTokens";
+import { LoadingError } from "@/components/LoadingError";
 
 export function MealTypesTab() {
   const queryClient = useQueryClient();
@@ -114,19 +115,10 @@ export function MealTypesTab() {
 
   // ── Error ────────────────────────────────────────────────────────────────
   if (isError) {
-    return (
-      <Flex
-        direction="column"
-        align="flex-start"
-        gap={SPACING[3]}
-        pt={SPACING[6]}
-      >
-        <BodyText secondary>Failed to load meal types.</BodyText>
-        <Button variant="secondary" size="sm" onClick={() => refetch()}>
-          Retry
-        </Button>
-      </Flex>
-    );
+    <LoadingError
+      message={"Failed to load meal types."}
+      onClick={() => refetch()}
+    />;
   }
 
   // ── Empty state ──────────────────────────────────────────────────────────

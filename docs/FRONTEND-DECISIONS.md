@@ -9,8 +9,10 @@ This document captures all UX, architecture, and product decisions made during f
 - Vite + React + TypeScript — no Next.js. App is a logged-in SaaS with no SSR needs.
 - TanStack Query (React Query) for all server state.
 - React Router v6 for routing.
-- Context API for global client state (auth, toasts). No Zustand.
-- Shared types from `@app/types` — never redefine on the frontend.
+- Context API for global client state (auth only). No Zustand.
+- Shared types from `@app/types` — never redefine on the frontend. Never import Zod schemas into the frontend — types only.
+- Toast system uses Chakra UI v3 `toaster.create()` from `src/components/ui/toaster` — no custom toast context.
+- `useToast` hook in `src/hooks/useToast.ts` wraps toaster with convenience methods: `success()`, `error()`, `info()`, `warning()`.
 
 ---
 
@@ -19,6 +21,11 @@ This document captures all UX, architecture, and product decisions made during f
 ### Sidebar nav
 
 Collapsible sidebar with icons. Expanded shows labels. Two items only: **Library** and **Schedules**.
+
+- Logout at the bottom — shows user name and email when expanded, first initial in a circle when collapsed, logout icon on the right.
+- Sidebar nav items use `NavItem` component from `src/components/NavItem.tsx`.
+- Tooltips appear on nav items when sidebar is collapsed (placement: right), hidden when expanded — uses Chakra UI Tooltip from `src/components/ui/tooltip`.
+- Tabs (Library sub-sections) are NOT in the sidebar — they live on the Library page as tab UI.
 
 ### Settings is not a nav item
 
@@ -42,6 +49,10 @@ On back or after regeneration, route back to the calendar at the same position. 
 - Already authenticated → redirect to `/schedules`
 - Not authenticated → `/login`
 - Post-login redirect goes to `/schedules`, then onboarding flow takes over if needed
+
+### Router structure
+
+All protected routes use nested React Router v6 layout routes under a single parent with `ProtectedRoute` + `AppLayout`. `AppLayout` renders `<Outlet />` — not a children prop. Router is in `src/router/index.tsx`.
 
 ---
 
@@ -78,12 +89,14 @@ Meal Types, Dish Types, Ingredients, Recipes, Layouts.
 
 - **Desktop:** items show edit + delete icons on hover. Click item or edit icon to edit.
 - **Mobile:** tap item to open bottom sheet with Edit / Delete options.
-- Inline editing for simple name fields (meal types, dish types): click → becomes input → Enter to save, Escape to cancel.
+- Inline editing for simple name fields (meal types, dish types): click → becomes input → Enter to save, Escape to cancel, blur to cancel.
 - Delete grayed out when blocked. Desktop: tooltip on hover explains why. Mobile: tap grayed delete → toast explains why.
+- All list content is constrained to `maxW="600px"`.
+- When a feature component file grows too long, extract sub-components into a sibling folder named after the parent tab, e.g. `IngredientTabComponents/`. Sub-components there are private to that tab.
 
 ### Meal Types tab
 
-- List of meal type names.
+- List of meal type names with colored dot per item.
 - Empty state: large prompt encouraging creation.
 - Inline edit on click. Delete blocked if used in any layout.
 
@@ -97,14 +110,31 @@ Default colors for seed data: Breakfast `#FFD93D`, Lunch `#45C9B2`, Dinner `#AEE
 
 ### Dish Types tab
 
-- Same pattern as meal types.
+- Same pattern as meal types, no color dot.
 - Delete blocked if referenced by recipes or meal slots.
 
 ### Ingredients tab
 
-- Grouped by parent ingredient with variants listed underneath.
-- Search field — filters as user types (debounced 300ms).
-- Same edit/delete interaction pattern.
+- Search field with Search icon inside input, debounced 300ms.
+- "Add ingredient" button sits directly below the search field — always visible at the top, not at the bottom of the list.
+- Grouped list using Chakra UI Accordion — one accordion item per parent ingredient.
+- Accordion closed by default.
+- Ingredients with no variants: no expand arrow, accordion item is not expandable.
+- Accordion item content shows "Variants" subtitle (Caption) and variant list.
+- "+" button next to ingredient name — tooltip "Add variant to \<name\>" on hover.
+  - Clicking auto-expands accordion if closed, shows inline input at bottom of variant list.
+- Search behavior:
+  - If ingredient name matches: auto-expand and show all variants.
+  - If variant matches: auto-expand and show only matching variants under parent.
+  - Matching substring highlighted using `<HighlightedText>` with `COLORS.highlight.default` background.
+  - Different empty state message for "no ingredients" vs "no search results".
+- Pagination using `<Pagination>` component: pageSize 20, page resets to 1 on new search.
+- Section load errors use `<LoadingError>` component with retry button.
+- Edit/delete on both parent ingredients and individual variants.
+- Parent delete blocked if has variants or referenced by recipes (409 → inline error).
+- Variant delete: 409 → inline error under variant row.
+- Add ingredient: 409 duplicate → inline error under input.
+- Accordion and related sub-components are extracted into `src/pages/library/tabs/IngredientTabComponents/`.
 
 ### Recipes tab
 
@@ -140,6 +170,17 @@ Fields: name, ingredients (autocomplete chips), meal types (dropdown, required),
 - If layout is used by 1 schedule: fully editable with a warning banner.
 - If layout is unused: fully editable, no banner.
 - Buttons: Save and Discard (same confirmation logic as recipe edit).
+
+---
+
+## Destructive Actions
+
+- All delete actions require a confirmation dialog before the DELETE request fires.
+- Use `ConfirmDialog` component from `src/components/ConfirmDialog.tsx`.
+- Dialog content: title "Delete \<item type\>?", body "This action cannot be undone.", confirm button `variant="danger"`, cancel button `variant="secondary"`.
+- The actual DELETE request only fires after user confirms.
+- `isLoading` state disables both buttons and shows spinner on confirm button while request is in flight.
+- 409 conflict errors are shown after confirmation attempt, as inline errors — never as toasts.
 
 ---
 
@@ -224,7 +265,7 @@ Week view. Day names and dates at top. Each day contains meal slot cards in layo
 | Field validation (unique name, required, invalid format)         | Inline error under the field                        |
 | 409 conflict with structured data (recipe in use, layout in use) | Inline error with context (affected schedule names) |
 | Action failed (save, delete, generate)                           | Toast — error variant                               |
-| Whole section failed to load                                     | Inline error in section with retry button           |
+| Whole section failed to load                                     | `<LoadingError>` component with retry button        |
 | Unexpected rendering crash                                       | Error boundary fallback with reload button          |
 
 **Never use a toast for field validation errors.**
@@ -241,17 +282,18 @@ Week view. Day names and dates at top. Each day contains meal slot cards in layo
 
 ## State Management Rules
 
-| Data type                              | Where it lives                                             |
-| -------------------------------------- | ---------------------------------------------------------- |
-| Server data (recipes, schedules, etc.) | React Query cache                                          |
-| Current user + access token            | AuthContext                                                |
-| Toast notifications                    | ToastContext                                               |
-| Onboarding status                      | Derived from React Query cache via `useOnboardingStatus()` |
-| Form inputs                            | Local useState                                             |
-| Modal open/closed                      | Local useState                                             |
-| Active library tab                     | Local useState (or URL param if deep-linking needed)       |
-| Calendar anchor date                   | URL param                                                  |
-| Settings returnTo                      | URL param                                                  |
+| Data type                              | Where it lives                                                                        |
+| -------------------------------------- | ------------------------------------------------------------------------------------- |
+| Server data (recipes, schedules, etc.) | React Query cache                                                                     |
+| Current user                           | AuthContext                                                                           |
+| Access token                           | AuthContext state + `accessTokenRef` (synced via `setAccessTokenGetter` in apiClient) |
+| Toast notifications                    | Chakra `toaster` — no context needed                                                  |
+| Onboarding status                      | Derived from React Query cache via `useOnboardingStatus()`                            |
+| Form inputs                            | Local useState                                                                        |
+| Modal open/closed                      | Local useState                                                                        |
+| Active library tab                     | Local useState (or URL param if deep-linking needed)                                  |
+| Calendar anchor date                   | URL param                                                                             |
+| Settings returnTo                      | URL param                                                                             |
 
 ---
 
@@ -264,3 +306,4 @@ Week view. Day names and dates at top. Each day contains meal slot cards in layo
 - Permissions management UI (backend already implemented)
 - Users management UI
 - Design system polish / theming / dark mode
+- Mobile nav (sidebar is hidden on mobile for MVP)

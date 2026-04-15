@@ -12,7 +12,8 @@ Monorepo (FE + BE). All frontend code lives under `app/client/src/`.
 - **Server state:** TanStack Query (React Query)
 - **Routing:** React Router v6
 - **Client state:** Context API only (no Zustand, no Redux)
-- **Shared types:** `@app/types` (imported from `packages/types/`)
+- **Shared types:** `@app/types` (imported from `packages/types/`) — never redefine types that exist here, never import Zod schemas into the frontend, types only
+- **Toast system:** Chakra UI v3 `toaster.create()` from `src/components/ui/toaster` — no custom toast context. Use `useToast` from `src/hooks/useToast.ts` for convenience methods.
 
 ---
 
@@ -21,23 +22,37 @@ Monorepo (FE + BE). All frontend code lives under `app/client/src/`.
 ```
 app/client/src/
 ├── api/                        ← raw typed fetch functions, one file per backend module
+│   ├── apiClient.ts            ← apiFetch wrapper + setAccessTokenGetter
 │   ├── auth.ts
+│   ├── mealTypes.ts
+│   ├── dishTypes.ts
+│   ├── ingredients.ts
 │   ├── recipes.ts
 │   ├── layouts.ts
 │   ├── schedules.ts
 │   └── ...
 ├── components/                 ← shared/reusable UI components
-│   ├── Toast.tsx
-│   ├── Modal.tsx
+│   ├── NavItem.tsx             ← reusable nav/sidebar item with icon + label
 │   ├── Sidebar.tsx
+│   ├── AppLayout.tsx
+│   ├── Button.tsx
+│   ├── Input.tsx
+│   ├── FormField.tsx
+│   ├── Typography.tsx
+│   ├── InlineEditInput.tsx
+│   ├── EditableListItem.tsx
+│   ├── ConfirmDialog.tsx
+│   ├── Pagination.tsx          ← reusable prev/next pagination
+│   ├── LoadingError.tsx        ← inline error message with retry button
+│   ├── HighlightedText.tsx     ← highlights matching substring in text
+│   ├── Modal.tsx
 │   ├── EmptyState.tsx
 │   └── ...
 ├── context/
-│   ├── AuthContext.tsx          ← current user, access token, login/logout
-│   └── ToastContext.tsx         ← global toast notifications
+│   └── AuthContext.tsx          ← current user, access token, login/logout
 ├── hooks/
 │   ├── useAuth.ts               ← reads from AuthContext
-│   ├── useToast.ts              ← reads from ToastContext
+│   ├── useToast.ts              ← wraps toaster with success/error/info/warning
 │   └── useOnboardingStatus.ts   ← derives onboarding state from React Query cache
 ├── pages/
 │   ├── login/
@@ -48,6 +63,7 @@ app/client/src/
 │   │       ├── MealTypesTab.tsx
 │   │       ├── DishTypesTab.tsx
 │   │       ├── IngredientsTab.tsx
+│   │       ├── IngredientTabComponents/  ← sub-components for IngredientsTab (accordion etc.)
 │   │       ├── RecipesTab.tsx
 │   │       └── LayoutsTab.tsx
 │   └── schedules/
@@ -56,13 +72,20 @@ app/client/src/
 │       └── calendar/
 │           └── CalendarPage.tsx
 ├── router/
-│   ├── index.tsx                ← route definitions
+│   ├── index.tsx                ← route definitions, nested layout routes
 │   └── ProtectedRoute.tsx       ← redirects to /login if not authenticated
+├── styles/
+│   ├── designTokens.ts          ← single source of truth for all design values
+│   └── theme.ts                 ← Chakra theme built from designTokens
 ├── types/                       ← frontend-only types not shared with BE
 └── utils/
     ├── date.ts                  ← date helpers, week snapping to Sunday
-    └── constants.ts
+    └── constants.ts             ← ROUTES, MEAL_TYPE_COLORS, API_BASE
 ```
+
+### File size rule
+
+When a page or tab component grows too long, extract sub-components into a folder named after the parent file, e.g. `src/pages/library/tabs/IngredientTabComponents/`. Sub-components in that folder are private to that tab — do not import them from other pages.
 
 ---
 
@@ -71,20 +94,21 @@ app/client/src/
 ### Server state vs client state
 
 - **React Query** — all server data (recipes, schedules, meal types, etc.). Never duplicate server data in Context or useState.
-- **Context** — only for truly global client state: auth and toasts. Nothing else.
+- **Context** — only for truly global client state: auth. Nothing else.
 - **useState / useReducer** — local component state (form inputs, open/closed modals, active tab).
 - **URL params** — anchor date, returnTo, active tab where deep-linking makes sense.
 
 ### API layer
 
-Raw fetch functions live in `api/`. They are plain async functions that call the backend and return typed data. They throw on non-OK responses. React Query wraps them — it never knows about the API directly.
+All fetch calls go through `apiFetch` from `src/api/apiClient.ts` — never use raw `fetch` directly. `apiFetch` automatically attaches `Authorization: Bearer <token>` and `credentials: 'include'`. Do not set these manually in individual API functions.
 
 ```typescript
-// api/recipes.ts
-export const fetchRecipes = async (params: RecipesParams): Promise<RecipesResponse> => {
-  const res = await fetch(`/api/v1/recipes?${new URLSearchParams(params)}`);
+// api/mealTypes.ts
+export const fetchMealTypes = async (): Promise<MealTypeResponse[]> => {
+  const res = await apiFetch(`${API_BASE}/meal-types`);
   if (!res.ok) throw await res.json();
-  return res.json();
+  const { data } = await res.json();
+  return data;
 };
 ```
 
@@ -94,37 +118,49 @@ Never pass workspaceId from the frontend. It is always derived from the JWT on t
 
 ### All responses
 
-All backend responses are wrapped in `{ data: <result> }`. Always unwrap before returning from api functions.
+All backend responses are wrapped in `{ data: <r> }`. Always unwrap before returning from api functions.
+
+---
+
+## Auth & Token Management
+
+- Access token lives in `AuthContext` as both `useState` and `useRef`.
+- The ref (`accessTokenRef`) is used by `apiFetch` via a getter function.
+- Call `setAccessTokenGetter(() => accessTokenRef.current)` once on `AuthContext` mount.
+- Update `accessTokenRef.current` on every token change: login, refresh, logout.
+- On logout: set ref to `null` and call `setAccessTokenGetter(() => null)`.
+- Never store the access token in localStorage or sessionStorage.
+- On app load: silently attempt `POST /auth/refresh` → if success fetch `/auth/me` → set user. If refresh fails → unauthenticated, redirect to `/login`.
 
 ---
 
 ## Routing
 
-### Route definitions
+### Route structure
 
-| Route | Page | Auth |
-|-------|------|------|
-| `/login` | LoginPage | Public only — redirect to `/schedules` if already authed |
-| `/library` | LibraryPage | Protected |
-| `/schedules` | ScheduleListPage | Protected |
-| `/schedules/:id/settings` | SettingsPage | Protected |
-| `/schedules/:id/calendar` | CalendarPage | Protected |
+All protected routes are nested under a single parent layout route:
 
-### Protected routes
-
-Wrap protected routes with `ProtectedRoute`. If no valid auth token, redirect to `/login`.
-
-### Settings entry point tracking
-
-When navigating to settings from inside the calendar, pass query params:
+```typescript
+{
+  path: '/',
+  element: <ProtectedRoute><AppLayout /></ProtectedRoute>,
+  children: [
+    { index: true, element: <Navigate to={ROUTES.SCHEDULES} replace /> },
+    { path: ROUTES.LIBRARY, element: <LibraryPage /> },
+    { path: ROUTES.SCHEDULES, element: <ScheduleListPage /> },
+    { path: ROUTES.SCHEDULE_SETTINGS_PATTERN, element: <SettingsPage /> },
+    { path: ROUTES.SCHEDULE_CALENDAR_PATTERN, element: <CalendarPage /> },
+  ]
+}
 ```
-/schedules/:id/settings?returnTo=calendar&anchorDate=YYYY-MM-DD
-```
-On back navigation or after regeneration, read these params and route accordingly. If `returnTo` is absent, back goes to `/schedules`.
 
-### Navigation
+`AppLayout` renders `<Outlet />` for page content — never a `children` prop.
 
-Sidebar nav has two items only: **Library** and **Schedules**. Settings is never in the nav — it is accessed from the schedule list or from the calendar via toast/banner.
+### ROUTES constant
+
+Two forms per route:
+- `ROUTES.SCHEDULE_SETTINGS(id)` — for navigation (function)
+- `ROUTES.SCHEDULE_SETTINGS_PATTERN` — for route definitions (string pattern)
 
 ---
 
@@ -134,13 +170,9 @@ Sidebar nav has two items only: **Library** and **Schedules**. Settings is never
 
 Provides: `user` (`{ id, email, role }`), `accessToken`, `login()`, `logout()`.
 
+Internally maintains `accessTokenRef` and calls `setAccessTokenGetter` to keep `apiFetch` in sync.
+
 On app load, attempt to refresh the token silently via `POST /auth/refresh`. If it fails, treat as unauthenticated.
-
-### ToastContext
-
-Provides: `showToast(message, type)` where type is `success | error | info | warning`.
-
-One toast container rendered at the root. Toasts auto-dismiss after ~4 seconds. One-time toasts (manual edit warning, lock reminder) must be tracked in component state so they are never shown twice in the same session.
 
 ---
 
@@ -168,6 +200,16 @@ One toast container rendered at the root. Toasts auto-dismiss after ~4 seconds. 
 
 ---
 
+## Destructive Actions
+
+- All delete actions must show a `ConfirmDialog` before firing the DELETE request.
+- Use `ConfirmDialog` from `src/components/ConfirmDialog.tsx`.
+- The DELETE request only fires after user confirms.
+- `isLoading` disables both buttons and shows spinner on the confirm button.
+- 409 errors after confirmation are shown as inline errors — never as toasts.
+
+---
+
 ## Onboarding
 
 On app load after authentication, fire 5 parallel React Query calls:
@@ -177,27 +219,7 @@ On app load after authentication, fire 5 parallel React Query calls:
 - recipes list
 - schedules list
 
-Use `useOnboardingStatus()` hook to derive missing steps from the cache:
-
-```typescript
-// hooks/useOnboardingStatus.ts
-export const useOnboardingStatus = () => {
-  const mealTypes = useQuery({ queryKey: ['meal-types'], queryFn: fetchMealTypes });
-  const dishTypes = useQuery({ queryKey: ['dish-types'], queryFn: fetchDishTypes });
-  const layouts = useQuery({ queryKey: ['layouts'], queryFn: fetchLayouts });
-  const recipes = useQuery({ queryKey: ['recipes'], queryFn: fetchRecipes });
-  const schedules = useQuery({ queryKey: ['schedules'], queryFn: fetchSchedules });
-
-  return {
-    needsMealTypes: mealTypes.data?.items.length === 0,
-    needsDishTypes: dishTypes.data?.items.length === 0,
-    needsLayouts: layouts.data?.items.length === 0,
-    needsRecipes: recipes.data?.items.length === 0,
-    needsSchedules: schedules.data?.items.length === 0,
-    isLoading: mealTypes.isLoading || dishTypes.isLoading || layouts.isLoading || recipes.isLoading || schedules.isLoading,
-  };
-};
-```
+Use `useOnboardingStatus()` hook to derive missing steps from the cache.
 
 Onboarding order when gaps exist: meal types → dish types → layouts → recipes → schedule list.
 Ingredients are skipped — seeded on workspace creation.
@@ -220,146 +242,26 @@ When a user manually edits a meal (adds, deletes, or modifies a recipe in the ca
 
 ---
 
-## Calendar Rules
-
-- Week view only. Navigation by full weeks (prev/next buttons).
-- Week always anchored to Sunday. All `anchorDate` values sent to the API must be Sundays.
-- Week picker at top allows jumping to any date within the schedule range — snaps to that week's Sunday before sending.
-- Default anchor on open: `startDate` of the schedule.
-- Dates outside `startDate`–`endDate` are unselectable in all date pickers.
-
----
-
 ## Design System
 
-### Source of truth
-All design decisions live on the frontend. The backend stores design-related fields (like `MealType.color`) but never assigns, generates, or validates them. If the color scheme changes, only frontend files change.
+### Single source of truth
 
-`src/styles/designTokens.ts` is the **single source of truth** for all design values. Every raw hex value, pixel value, font name, and shadow definition lives there and nowhere else. `src/styles/theme.ts` imports from `designTokens.ts` and feeds values into Chakra. `src/utils/constants.ts` imports from `designTokens.ts` for `MEAL_TYPE_COLORS`. No other file ever contains raw design values.
+`src/styles/designTokens.ts` is the **only** file that may contain raw hex values or pixel values. All components import from here.
 
-### Design system reference
-Based on the "Flower" Figma UI kit. Light mode first. Dark mode is post-MVP. Reference images in `app/client/design/`.
-
-### designTokens.ts structure
+### COLORS structure
 
 ```typescript
-// src/styles/designTokens.ts
-
-export const COLORS = {
-  primary: {
-    default: '#02472E',
-    hover: '#03603d',
-    light: '#E8F5E0',
-  },
-  secondary: {
-    default: '#45C9B2',
-    hover: '#35b09b',
-    light: '#E0F7F4',
-  },
-  highlight: {
-    default: '#AEE553',
-    dark: '#48C96D',
-  },
-  palette: {       // used for meal type colors, tags, badges — numbered slots, no semantic color names
-    1: '#AEE553',
-    2: '#45C9B2',
-    3: '#FF6B6B',
-    4: '#FFD93D',
-    5: '#C77DFF',
-    6: '#48C96D',
-    7: '#4FC3F7',
-    8: '#F48FB1',
-  },
-  bg: {
-    base: '#F8F8F8',
-    surface: '#FFFFFF',
-    elevated: '#FFFFFF',
-  },
-  text: {
-    primary: '#1A1A1A',
-    secondary: '#6B6B6B',
-    tertiary: '#9E9E9E',
-    inverse: '#FFFFFF',
-  },
-  border: {
-    default: '#EEEEEE',
-    strong: '#DDDDDD',
-  },
-  semantic: {
-    error: '#FF6B6B',
-    warning: '#FFD93D',
-    success: '#48C96D',
-    info: '#4FC3F7',
-    errorBg: '#FFF0F0',
-    warningBg: '#FFFBEB',
-    successBg: '#F0FFF4',
-    infoBg: '#F0F9FF',
-  },
-  sidebar: {
-    bg: '#FFFFFF',
-    itemActiveBg: '#AEE553',
-    itemActiveColor: '#02472E',
-    itemColor: '#6B6B6B',
-    itemHoverBg: '#F5F5F5',
-  },
-  btn: {
-    primary: { bg: '#02472E', color: '#FFFFFF', hoverBg: '#03603d' },
-    secondary: { bg: 'transparent', color: '#02472E', border: '#02472E', hoverBg: '#E8F5E0' },
-    danger: { bg: '#FF6B6B', color: '#FFFFFF', hoverBg: '#ff5252' },
-    disabled: { bg: '#EEEEEE', color: '#9E9E9E' },
-  },
-  input: {
-    bg: '#FFFFFF',
-    border: '#DDDDDD',
-    borderFocus: '#02472E',
-    borderError: '#FF6B6B',
-    color: '#1A1A1A',
-    placeholder: '#9E9E9E',
-  },
-} as const;
-
-export const FONTS = {
-  body: "'Poppins', sans-serif",
-  heading: "'Poppins', sans-serif",
-} as const;
-
-export const FONT_SIZES = {
-  xs: '11px', sm: '12px', md: '13px', base: '14px',
-  lg: '16px', xl: '18px', '2xl': '22px', '3xl': '28px', '4xl': '36px',
-} as const;
-
-export const FONT_WEIGHTS = {
-  regular: 400, medium: 500, semibold: 600, bold: 700,
-} as const;
-
-export const LINE_HEIGHTS = {
-  tight: 1.3, normal: 1.5, relaxed: 1.7,
-} as const;
-
-export const SPACING = {
-  1: '4px', 2: '8px', 3: '12px', 4: '16px', 5: '20px',
-  6: '24px', 8: '32px', 10: '40px', 12: '48px', 16: '64px',
-} as const;
-
-export const RADII = {
-  sm: '6px',    // list rows, badges, tags
-  md: '8px',    // inputs, small buttons
-  lg: '12px',   // cards
-  xl: '14px',   // primary buttons, modals
-  full: '9999px',
-} as const;
-
-export const SHADOWS = {
-  sm: '0 1px 2px rgba(0,0,0,0.06)',
-  md: '0 2px 8px rgba(0,0,0,0.08)',
-  lg: '0 4px 16px rgba(0,0,0,0.10)',
-  sidebar: '1px 0 2px rgba(0,0,0,0.06)',
-} as const;
-
-export const SIDEBAR = {
-  widthCollapsed: '56px',
-  widthExpanded: '220px',
-} as const;
+COLORS.primary.default / .hover / .light
+COLORS.secondary.default / .hover / .light
+COLORS.highlight.default / .dark
+COLORS.palette[1-8]      // for meal types, tags — numbered slots, no color names
+COLORS.bg.base / .surface / .elevated
+COLORS.text.primary / .secondary / .tertiary / .inverse
+COLORS.border.default / .strong
+COLORS.semantic.error / .warning / .success / .info / .errorBg etc.
+COLORS.sidebar.bg / .itemActiveBg / .itemActiveColor / .itemColor / .itemHoverBg
+COLORS.btn.primary / .secondary / .danger / .disabled
+COLORS.input.bg / .border / .borderFocus / .borderError / .color / .placeholder
 ```
 
 ### theme.ts pattern
@@ -383,8 +285,6 @@ export const MEAL_TYPE_COLORS = [
 const color = MEAL_TYPE_COLORS[existingMealTypes.length % MEAL_TYPE_COLORS.length];
 ```
 
-In the calendar view, each meal slot card uses the meal type's `color` field for its left border accent and chip background (tinted).
-
 ### Rules
 - **`designTokens.ts` is the only file that may contain raw hex values or pixel values.**
 - Never hardcode color, spacing, font, radius, or shadow values in components or any other file.
@@ -396,72 +296,36 @@ In the calendar view, each meal slot card uses the meal type's `color` field for
 ## Testing
 
 ### Stack
-- **Vitest** — test runner, same as backend
+- **Vitest** — test runner
 - **React Testing Library** — component and hook testing
 - **jsdom** — browser environment simulation
+- **@testing-library/user-event** — user interaction simulation
 
-### Install
-```bash
-npm i -D vitest @testing-library/react @testing-library/jest-dom @testing-library/user-event jsdom
-```
-
-### Vitest config
-Add to `vite.config.ts`:
-```typescript
-export default defineConfig({
-  plugins: [react(), tsconfigPaths()],
-  test: {
-    environment: 'jsdom',
-    globals: true,
-    setupFiles: ['./src/test/setup.ts'],
-  },
-})
-```
-
-Create `src/test/setup.ts`:
-```typescript
-import '@testing-library/jest-dom'
-```
-
-### What to test
-
-| Type | Test? | Notes |
-|------|-------|-------|
-| Utility functions (`date.ts`, `constants.ts`) | Always | Pure functions, easy, high value |
-| Custom hooks | Always | Test logic in isolation with `renderHook` |
-| Complex components with logic | Yes | Forms, conditional rendering, user interactions |
-| Simple presentational components | No | Low value |
-| API functions | Yes | Mock fetch, assert correct URL and params |
-| Chakra UI components | Never | Not our code |
-| Routing config | No | Low value |
+### Rules
+- Every new component, hook, and utility function gets a test file next to it.
+- Use `@testing-library/user-event` for all interactions — never `fireEvent`.
+- Mock all API calls in component and hook tests — never hit the real API.
+- Use `vi.spyOn(global, 'fetch')` in API tests and assert on actual URLs, methods, and `Authorization: Bearer` header.
+- Reset spies and the `setAccessTokenGetter` between tests to avoid state leakage.
+- If removing a piece of logic would not break any test, the test is not good enough.
 
 ### File naming
 Test files live next to the file they test:
 ```
-src/utils/date.ts
-src/utils/date.test.ts
-
-src/hooks/useOnboardingStatus.ts
-src/hooks/useOnboardingStatus.test.ts
-
-src/pages/library/tabs/MealTypesTab.tsx
-src/pages/library/tabs/MealTypesTab.test.tsx
+src/utils/date.ts           → src/utils/date.test.ts
+src/hooks/useAuth.ts        → src/hooks/useAuth.test.ts
+src/api/mealTypes.ts        → src/api/mealTypes.test.ts
+src/components/Button.tsx   → src/components/Button.test.tsx
+src/pages/library/tabs/MealTypesTab.tsx → src/pages/library/tabs/MealTypesTab.test.tsx
+src/pages/library/tabs/IngredientTabComponents/Foo.tsx → src/pages/library/tabs/IngredientTabComponents/Foo.test.tsx
 ```
-
-### Rules
-- Every utility function file gets a test file
-- Every custom hook gets a test file
-- Every component with conditional logic, form handling, or user interaction gets a test file
-- Simple presentational components do not need test files
-- Mock all API calls in component and hook tests — never hit the real API
-- Use `@testing-library/user-event` for simulating user interactions, not `fireEvent`
 
 ---
 
 ## Component Conventions
 
 ### Golden rule
-Never use raw Chakra primitives or HTML elements directly in pages. Always use the semantic components from `src/components/`. This ensures visual consistency and makes design changes a single-file operation.
+Never use raw Chakra primitives or HTML elements directly in pages. Always use the semantic components from `src/components/`.
 
 ### Typography
 Always use components from `src/components/Typography.tsx`:
@@ -482,18 +346,47 @@ Always use `<Button>` from `src/components/Button.tsx` with explicit variant:
 
 Never use Chakra's `<Button>` directly in pages.
 
+### Nav items
+Always use `<NavItem>` from `src/components/NavItem.tsx` for sidebar and nav items. Never build inline nav rows with custom hover/active logic.
+
 ### Form fields
-Always use `<FormField>` from `src/components/FormField.tsx` to wrap inputs. Never use `<Input>` alone in a form — it must always be wrapped in `<FormField>` which provides the label and error message.
+Always use `<FormField>` from `src/components/FormField.tsx` to wrap inputs. Never use `<Input>` alone in a form.
+
+### Inline editing
+Use `<InlineEditInput>` from `src/components/InlineEditInput.tsx`. It dismisses on Enter, Escape, and blur.
+
+### Editable list items
+Use `<EditableListItem>` from `src/components/EditableListItem.tsx` for all name-editable, delete-able list rows. It handles inline edit mode, hover-reveal delete, blocked state, and inline errors internally.
+
+### Confirm dialog
+Use `<ConfirmDialog>` from `src/components/ConfirmDialog.tsx` for all delete confirmations. Never fire a DELETE request without user confirmation.
+
+### Pagination
+Use `<Pagination>` from `src/components/Pagination.tsx` for all paginated lists.
+Props: `page`, `totalPages`, `onPageChange`.
+Never build inline prev/next pagination in page components.
+
+### Loading error
+Use `<LoadingError>` from `src/components/LoadingError.tsx` for all "section failed to load" states.
+Props: `message`, `onRetry`.
+Never build inline error+retry UI in page components.
+
+### Highlighted text
+Use `<HighlightedText>` from `src/components/HighlightedText.tsx` when rendering text that may contain a search match.
+Props: `text`, `highlight`.
+Uses `COLORS.highlight.default` as background on the matched substring.
+
+### Tooltips
+Use Chakra UI Tooltip from `src/components/ui/tooltip` (CLI snippet). Never build custom tooltip components.
 
 ### Future components
-As new shared components are added (Card, Badge, Modal, BottomSheet, EmptyState, Banner, Spinner, Tooltip), the same rule applies — pages import from `src/components/`, never from Chakra directly.
+As new shared components are added (Card, Badge, Modal, BottomSheet, EmptyState, Banner, Spinner), the same rule applies — pages import from `src/components/`, never from Chakra directly.
 
 ### Internal implementation rules
 - All components must use Chakra primitives internally — `Box`, `Text`, `Heading`, `Flex`, `Stack`, etc.
-- Never use raw HTML tags (`<div>`, `<h1>`, `<p>`, `<span>`, `<label>`) inside components
-- Never use the `style` attribute or inline style objects — use Chakra style props instead
-- Typography components use `<Heading as="h1/h2/...">` and `<Text as="p/span/label/...">` internally
-- Import all design values from `src/styles/designTokens.ts` — no hardcoded values in components
+- Never use raw HTML tags (`<div>`, `<h1>`, `<p>`, `<span>`, `<label>`) inside components.
+- Never use the `style` attribute or inline style objects — use Chakra style props instead.
+- Import all design values from `src/styles/designTokens.ts` — no hardcoded values in components.
 
 ---
 
@@ -501,8 +394,9 @@ As new shared components are added (Card, Badge, Modal, BottomSheet, EmptyState,
 
 - Plain functions only — no classes.
 - No inline Zod schemas — import from `@app/types`.
-- No hardcoded strings for routes — define route constants in `router/index.tsx`.
+- No hardcoded strings for routes — use `ROUTES` constants from `src/utils/constants.ts`.
 - Search inputs are debounced 300ms — never fire on every keystroke.
+- All list content in library tabs is constrained to `maxW="600px"`.
 - Mobile and desktop share the same interaction logic. Hover states are visual affordance only — the actual action is always click/tap.
 - Recipe ingredients use the two-step match flow: call `/ingredients/match` first, only call `/ingredients` to create if match returns null.
 - `RecipeIngredient.display_name` — always send the variant name the user typed, not the canonical ingredient name. On read, display `displayName ?? ingredientName`.

@@ -1,21 +1,11 @@
 import { useState, useEffect } from "react";
-import { Plus, Trash2 } from "lucide-react";
 import {
   useQuery,
   useMutation,
   useQueryClient,
   keepPreviousData,
 } from "@tanstack/react-query";
-import {
-  AccordionItem,
-  AccordionItemContent,
-  AccordionItemIndicator,
-  AccordionItemTrigger,
-  AccordionRoot,
-  Box,
-  Flex,
-  Spinner,
-} from "@chakra-ui/react";
+import { Box, Flex, Spinner } from "@chakra-ui/react";
 import type { IngredientResponse } from "@app/types";
 import {
   fetchIngredients,
@@ -27,34 +17,14 @@ import {
   deleteVariant,
 } from "@/api/ingredients";
 import { Button } from "@/components/Button";
-import { EditableListItem } from "@/components/EditableListItem";
 import { InlineEditInput } from "@/components/InlineEditInput";
 import { SearchInput } from "@/components/SearchInput";
-import { BodyText, Caption } from "@/components/Typography";
+import { BodyText } from "@/components/Typography";
 import { useToast } from "@/hooks/useToast";
-import {
-  COLORS,
-  FONT_WEIGHTS,
-  ICON_SIZES,
-  SPACING,
-} from "@/styles/designTokens";
-
-// ── Highlight helper ────────────────────────────────────────────────────────
-
-function HighlightedText({ text, query }: { text: string; query: string }) {
-  if (!query) return <>{text}</>;
-  const idx = text.toLowerCase().indexOf(query.toLowerCase());
-  if (idx === -1) return <>{text}</>;
-  return (
-    <>
-      {text.slice(0, idx)}
-      <Box as="span" bg={COLORS.highlight.default}>
-        {text.slice(idx, idx + query.length)}
-      </Box>
-      {text.slice(idx + query.length)}
-    </>
-  );
-}
+import { SPACING } from "@/styles/designTokens";
+import { AccordionList } from "./IngredientsTabComponents/AccordionList";
+import { Pagination } from "@/components/Pagination";
+import { LoadingError } from "@/components/LoadingError";
 
 // ── Main component ──────────────────────────────────────────────────────────
 
@@ -70,10 +40,6 @@ export function IngredientsTab() {
   const [hoveredIngredient, setHoveredIngredient] = useState<string | null>(
     null,
   );
-  const [editingIngredient, setEditingIngredient] = useState<string | null>(
-    null,
-  );
-
   const [addingVariantFor, setAddingVariantFor] = useState<string | null>(null);
   const [addingIngredient, setAddingIngredient] = useState(false);
   const [newIngredientError, setNewIngredientError] = useState<string | null>(
@@ -324,17 +290,10 @@ export function IngredientsTab() {
 
   if (isError) {
     return (
-      <Flex
-        direction="column"
-        align="flex-start"
-        gap={SPACING[3]}
-        pt={SPACING[6]}
-      >
-        <BodyText secondary>Failed to load ingredients.</BodyText>
-        <Button variant="secondary" size="sm" onClick={() => refetch()}>
-          Retry
-        </Button>
-      </Flex>
+      <LoadingError
+        message={"Failed to load ingredients."}
+        onClick={() => refetch()}
+      />
     );
   }
 
@@ -411,183 +370,26 @@ export function IngredientsTab() {
         </Box>
       )}
 
-      {/* Accordion list */}
-      <AccordionRoot
-        multiple
-        collapsible
-        value={expandedItems}
-        onValueChange={(e) => setExpandedItems(e.value)}
-        mt={SPACING[2]}
-      >
-        {ingredients.map((ingredient: IngredientResponse) => {
-          const hasVariants = ingredient.ingredient_variants.length > 0;
-          const isAddingHere = addingVariantFor === ingredient.id;
-          const isHovered = hoveredIngredient === ingredient.id;
-          const isEditing = editingIngredient === ingredient.id;
+      <AccordionList
+        ingredients={ingredients}
+        expandedItems={expandedItems}
+        setExpandedItems={setExpandedItems}
+        addingVariantFor={addingVariantFor}
+        setHoveredIngredient={setHoveredIngredient}
+        hoveredIngredient={hoveredIngredient}
+        updateIngredientMutation={updateIngredientMutation}
+        deleteIngredientMutation={deleteIngredientMutation}
+        updateVariantMutation={updateVariantMutation}
+        deleteVariantMutation={deleteVariantMutation}
+        addVariantMutation={addVariantMutation}
+        search={search}
+        handleAddVariantClick={handleAddVariantClick}
+        handleCancelAddVariant={handleCancelAddVariant}
+        deleteErrors={deleteErrors}
+        variantDeleteErrors={variantDeleteErrors}
+      />
 
-          return (
-            <AccordionItem key={ingredient.id} value={ingredient.id}>
-              {/* Trigger row */}
-              <Flex
-                align="center"
-                onMouseEnter={() => setHoveredIngredient(ingredient.id)}
-                onMouseLeave={() => setHoveredIngredient(null)}
-              >
-                <AccordionItemTrigger
-                  flex={1}
-                  cursor={hasVariants ? "pointer" : "default"}
-                >
-                  {isEditing ? (
-                    <Box flex={1} onClick={(e) => e.stopPropagation()}>
-                      <InlineEditInput
-                        value={ingredient.name}
-                        onSave={(name) => {
-                          updateIngredientMutation.mutate({
-                            id: ingredient.id,
-                            name,
-                          });
-                          setEditingIngredient(null);
-                        }}
-                        onCancel={() => setEditingIngredient(null)}
-                      />
-                    </Box>
-                  ) : (
-                    <Box
-                      flex={1}
-                      textAlign="left"
-                      fontWeight={FONT_WEIGHTS.medium}
-                      cursor="text"
-                      onPointerDown={(e) => e.stopPropagation()}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingIngredient(ingredient.id);
-                      }}
-                    >
-                      <HighlightedText text={ingredient.name} query={search} />
-                    </Box>
-                  )}
-
-                  {hasVariants && (
-                    <AccordionItemIndicator
-                      data-testid={`accordion-indicator-${ingredient.id}`}
-                    />
-                  )}
-                </AccordionItemTrigger>
-
-                {/* Hover action buttons — outside the trigger to avoid nested buttons */}
-                <Flex
-                  opacity={isHovered && !isEditing ? 1 : 0}
-                  transition="opacity 0.15s ease"
-                  gap={SPACING[1]}
-                  flexShrink={0}
-                >
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    aria-label={`Add variant to ${ingredient.name}`}
-                    onClick={() => handleAddVariantClick(ingredient.id)}
-                  >
-                    <Plus size={ICON_SIZES.sm} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    aria-label={`Delete ${ingredient.name}`}
-                    onClick={() =>
-                      deleteIngredientMutation.mutate(ingredient.id)
-                    }
-                  >
-                    <Trash2 size={ICON_SIZES.sm} />
-                  </Button>
-                </Flex>
-              </Flex>
-
-              {/* Inline delete error */}
-              {deleteErrors[ingredient.id] && (
-                <Box px={SPACING[3]} pb={SPACING[1]}>
-                  <BodyText secondary>{deleteErrors[ingredient.id]}</BodyText>
-                </Box>
-              )}
-
-              {/* Content — only rendered when there's something to show */}
-              {(hasVariants || isAddingHere) && (
-                <AccordionItemContent>
-                  <Box px={SPACING[3]} pt={SPACING[2]} pb={SPACING[1]}>
-                    <Caption>Variants</Caption>
-                  </Box>
-
-                  {ingredient.ingredient_variants.map((v) => (
-                    <EditableListItem
-                      key={v.id}
-                      name={v.variant}
-                      nameDisplay={
-                        <BodyText>
-                          <HighlightedText text={v.variant} query={search} />
-                        </BodyText>
-                      }
-                      onSave={(variant) =>
-                        updateVariantMutation.mutate({
-                          ingredientId: ingredient.id,
-                          variantId: v.id,
-                          variant,
-                        })
-                      }
-                      onDelete={() =>
-                        deleteVariantMutation.mutate({
-                          ingredientId: ingredient.id,
-                          variantId: v.id,
-                        })
-                      }
-                      inlineError={variantDeleteErrors[v.id]}
-                    />
-                  ))}
-
-                  {isAddingHere && (
-                    <Box px={SPACING[3]} py={SPACING[1]}>
-                      <InlineEditInput
-                        value=""
-                        placeholder="Variant name"
-                        onSave={(variant) =>
-                          addVariantMutation.mutate({
-                            ingredientId: ingredient.id,
-                            variant,
-                          })
-                        }
-                        onCancel={() => handleCancelAddVariant(ingredient)}
-                      />
-                    </Box>
-                  )}
-                </AccordionItemContent>
-              )}
-            </AccordionItem>
-          );
-        })}
-      </AccordionRoot>
-
-      {/* Pagination */}
-      {meta && meta.totalPages > 1 && (
-        <Flex align="center" gap={SPACING[3]} pt={SPACING[4]}>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setPage((p) => p - 1)}
-            disabled={meta.page === 1}
-          >
-            Previous
-          </Button>
-          <BodyText secondary>
-            Page {meta.page} of {meta.totalPages}
-          </BodyText>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setPage((p) => p + 1)}
-            disabled={meta.page === meta.totalPages}
-          >
-            Next
-          </Button>
-        </Flex>
-      )}
+      <Pagination meta={meta} setPage={setPage} />
     </Box>
   );
 }

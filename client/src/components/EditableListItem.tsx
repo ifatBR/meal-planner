@@ -17,6 +17,7 @@ interface EditableListItemProps {
   deleteBlockedReason?: string;
   inlineError?: string;
   addButtonProps?: { tooltip: string; onClick?: () => void };
+  hoverColors?: { bg?: string; color?: string };
 }
 
 export function EditableListItem({
@@ -29,6 +30,7 @@ export function EditableListItem({
   deleteBlockedReason,
   inlineError,
   addButtonProps,
+  hoverColors,
 }: EditableListItemProps) {
   const [editing, setEditing] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -55,6 +57,7 @@ export function EditableListItem({
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         transition="background-color 0.15s ease"
+        _hover={hoverColors || { bg: COLORS.highlight.secondary }}
       >
         {color && (
           <Box
