@@ -37,7 +37,7 @@ export const COLORS = {
     dark: _lime600,
     default: _lime400,
     secondary: _lime200,
-    tertiary: _teal100,
+    tertiary: _gray200,
   },
   palette: {
     1: _teal400,

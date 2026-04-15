@@ -13,7 +13,7 @@ export function Pagination({ meta, setPage }: PaginationProps) {
     meta.totalPages > 1 && (
       <Flex align="center" gap={SPACING[3]} pt={SPACING[4]}>
         <Button
-          variant="secondary"
+          variant="primary"
           size="sm"
           onClick={() => setPage((p: number) => p - 1)}
           disabled={meta.page === 1}
@@ -24,7 +24,7 @@ export function Pagination({ meta, setPage }: PaginationProps) {
           Page {meta.page} of {meta.totalPages}
         </BodyText>
         <Button
-          variant="secondary"
+          variant="primary"
           size="sm"
           onClick={() => setPage((p: number) => p + 1)}
           disabled={meta.page === meta.totalPages}

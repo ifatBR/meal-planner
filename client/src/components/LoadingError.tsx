@@ -16,7 +16,7 @@ export function LoadingError({ message, onClick }: LoadingErrorProps) {
       pt={SPACING[6]}
     >
       <BodyText secondary>{message}</BodyText>
-      <Button variant="secondary" size="sm" onClick={onClick}>
+      <Button variant="primary" size="sm" onClick={onClick}>
         Retry
       </Button>
     </Flex>

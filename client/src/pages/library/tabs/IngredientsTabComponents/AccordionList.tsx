@@ -92,7 +92,7 @@ export function AccordionList({
               onMouseLeave={() => setHoveredIngredient(null)}
               _hover={{ bg: COLORS.highlight.secondary }}
               borderRadius={RADII.md}
-              pl={SPACING[1]}
+              px={SPACING[1]}
               py={SPACING[2]}
             >
               <AccordionItemTrigger
