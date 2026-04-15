@@ -72,7 +72,6 @@ export function EditableListItem({
               value={name}
               onSave={handleSave}
               onCancel={handleCancel}
-              onBlur={handleCancel}
             />
           ) : (
             <Box
@@ -96,9 +95,10 @@ export function EditableListItem({
               <Button
                 variant="ghost"
                 size="sm"
+                aria-label={addButtonProps.tooltip}
                 onClick={addButtonProps.onClick}
               >
-                <Plus size={ICON_SIZES.xs} />{" "}
+                <Plus size={ICON_SIZES.xs} />
               </Button>
             </Tooltip>
           )}

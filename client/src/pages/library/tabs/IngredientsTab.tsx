@@ -1,7 +1,21 @@
 import { useState, useEffect } from "react";
-import { Plus, Search } from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Box, Flex, Spinner } from "@chakra-ui/react";
+import { Plus, Trash2 } from "lucide-react";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  keepPreviousData,
+} from "@tanstack/react-query";
+import {
+  AccordionItem,
+  AccordionItemContent,
+  AccordionItemIndicator,
+  AccordionItemTrigger,
+  AccordionRoot,
+  Box,
+  Flex,
+  Spinner,
+} from "@chakra-ui/react";
 import type { IngredientResponse } from "@app/types";
 import {
   fetchIngredients,
@@ -15,11 +29,15 @@ import {
 import { Button } from "@/components/Button";
 import { EditableListItem } from "@/components/EditableListItem";
 import { InlineEditInput } from "@/components/InlineEditInput";
-import { Input } from "@/components/Input";
-import { BodyText, SectionTitle } from "@/components/Typography";
+import { SearchInput } from "@/components/SearchInput";
+import { BodyText, Caption } from "@/components/Typography";
 import { useToast } from "@/hooks/useToast";
-import { COLORS, FONT_SIZES, ICON_SIZES, SPACING } from "@/styles/designTokens";
-import { Tooltip } from "@/components/ui/tooltip";
+import {
+  COLORS,
+  FONT_WEIGHTS,
+  ICON_SIZES,
+  SPACING,
+} from "@/styles/designTokens";
 
 // ── Highlight helper ────────────────────────────────────────────────────────
 
@@ -48,7 +66,14 @@ export function IngredientsTab() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
-  const [hoveredGroup, setHoveredGroup] = useState<string | null>(null);
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const [hoveredIngredient, setHoveredIngredient] = useState<string | null>(
+    null,
+  );
+  const [editingIngredient, setEditingIngredient] = useState<string | null>(
+    null,
+  );
+
   const [addingVariantFor, setAddingVariantFor] = useState<string | null>(null);
   const [addingIngredient, setAddingIngredient] = useState(false);
   const [newIngredientError, setNewIngredientError] = useState<string | null>(
@@ -72,10 +97,26 @@ export function IngredientsTab() {
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["ingredients", page, search],
     queryFn: () => fetchIngredients(page, search || undefined),
+    placeholderData: keepPreviousData,
   });
 
   const ingredients = data?.items ?? [];
   const meta = data?.meta;
+
+  // Auto-expand items whose variants match the search query
+  useEffect(() => {
+    if (!search || !ingredients.length) return;
+    const matched = ingredients
+      .filter((ing) =>
+        ing.ingredient_variants.some((v) =>
+          v.variant.toLowerCase().includes(search.toLowerCase()),
+        ),
+      )
+      .map((ing) => ing.id);
+    if (matched.length > 0) {
+      setExpandedItems((prev) => Array.from(new Set([...prev, ...matched])));
+    }
+  }, [search, ingredients]);
 
   // ── Mutations ─────────────────────────────────────────────────────────────
 
@@ -91,7 +132,7 @@ export function IngredientsTab() {
           old
             ? {
                 ...old,
-                ingredients: old.items.map((ing) =>
+                items: old.items.map((ing) =>
                   ing.id === id ? { ...ing, name } : ing,
                 ),
               }
@@ -174,7 +215,7 @@ export function IngredientsTab() {
           old
             ? {
                 ...old,
-                ingredients: old.items.map((ing) =>
+                items: old.items.map((ing) =>
                   ing.id === ingredientId
                     ? {
                         ...ing,
@@ -253,6 +294,22 @@ export function IngredientsTab() {
     },
   });
 
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
+  const handleAddVariantClick = (ingredientId: string) => {
+    setAddingVariantFor(ingredientId);
+    setExpandedItems((prev) =>
+      prev.includes(ingredientId) ? prev : [...prev, ingredientId],
+    );
+  };
+
+  const handleCancelAddVariant = (ingredient: IngredientResponse) => {
+    setAddingVariantFor(null);
+    if (ingredient.ingredient_variants.length === 0) {
+      setExpandedItems((prev) => prev.filter((id) => id !== ingredient.id));
+    }
+  };
+
   // ── Loading ───────────────────────────────────────────────────────────────
 
   if (isLoading) {
@@ -281,7 +338,7 @@ export function IngredientsTab() {
     );
   }
 
-  // ── Empty state (no ingredients at all) ───────────────────────────────────
+  // ── Empty state ───────────────────────────────────────────────────────────
 
   if (!search && !ingredients.length && !addingIngredient) {
     return (
@@ -312,127 +369,200 @@ export function IngredientsTab() {
   return (
     <Box maxW="600px" pt={SPACING[4]}>
       {/* Search */}
-      <Flex align="center" gap={SPACING[2]} mb={SPACING[4]}>
-        <Box color={COLORS.text.tertiary} flexShrink={0}>
-          <Search size={16} />
-        </Box>
-        <Box flex={1}>
-          <Input
-            placeholder="Search ingredients…"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
+      <SearchInput
+        placeholder="Search ingredients…"
+        value={searchInput}
+        onChange={setSearchInput}
+      />
+
+      {/* Add ingredient */}
+      {addingIngredient ? (
+        <Box pt={SPACING[4]}>
+          <InlineEditInput
+            value=""
+            onSave={(name) => createIngredientMutation.mutate(name)}
+            onCancel={() => {
+              setAddingIngredient(false);
+              setNewIngredientError(null);
+            }}
           />
+          {newIngredientError && (
+            <Box pt={SPACING[1]}>
+              <BodyText secondary>{newIngredientError}</BodyText>
+            </Box>
+          )}
         </Box>
-        {/* Add ingredient */}
-        {addingIngredient ? (
-          <Box pt={SPACING[4]}>
-            <InlineEditInput
-              value=""
-              onSave={(name) => createIngredientMutation.mutate(name)}
-              onCancel={() => {
-                setAddingIngredient(false);
-                setNewIngredientError(null);
-              }}
-            />
-            {newIngredientError && (
-              <Box pt={SPACING[1]}>
-                <BodyText secondary>{newIngredientError}</BodyText>
-              </Box>
-            )}
-          </Box>
-        ) : (
-          <Box pt={SPACING[2]} px={SPACING[3]}>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setAddingIngredient(true)}
-            >
-              + Add ingredient
-            </Button>
-          </Box>
-        )}
-      </Flex>
+      ) : (
+        <Box pt={SPACING[2]} px={SPACING[3]}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setAddingIngredient(true)}
+          >
+            + Add ingredient
+          </Button>
+        </Box>
+      )}
 
       {/* No results */}
       {search && !ingredients.length && (
-        <BodyText secondary>No ingredients match "{search}".</BodyText>
+        <Box pt={SPACING[4]}>
+          <BodyText secondary>No ingredients match "{search}".</BodyText>
+        </Box>
       )}
 
-      {/* Grouped ingredient list */}
-      <Flex direction="column" gap={SPACING[2]}>
-        {ingredients.map((ingredient: IngredientResponse) => (
-          <Box
-            key={ingredient.id}
-            onMouseEnter={() => setHoveredGroup(ingredient.id)}
-            onMouseLeave={() => {
-              setHoveredGroup(null);
-            }}
-          >
-            {/* Parent row */}
-            <EditableListItem
-              name={ingredient.name}
-              nameDisplay={
-                <SectionTitle>
-                  <HighlightedText text={ingredient.name} query={search} />
-                </SectionTitle>
-              }
-              addButtonProps={{
-                tooltip: `Add variant to ${ingredient.name}`,
-                onClick: () => setAddingVariantFor(ingredient.id),
-              }}
-              onSave={(name) =>
-                updateIngredientMutation.mutate({ id: ingredient.id, name })
-              }
-              onDelete={() => deleteIngredientMutation.mutate(ingredient.id)}
-              inlineError={deleteErrors[ingredient.id]}
-            />
-            {/* Variant rows */}
-            {ingredient.ingredient_variants.map((v) => (
-              <Box key={v.id} pl={SPACING[8]}>
-                <EditableListItem
-                  name={v.variant}
-                  nameDisplay={
-                    <BodyText>
-                      <HighlightedText text={v.variant} query={search} />
-                    </BodyText>
-                  }
-                  onSave={(variant) =>
-                    updateVariantMutation.mutate({
-                      ingredientId: ingredient.id,
-                      variantId: v.id,
-                      variant,
-                    })
-                  }
-                  onDelete={() =>
-                    deleteVariantMutation.mutate({
-                      ingredientId: ingredient.id,
-                      variantId: v.id,
-                    })
-                  }
-                  inlineError={variantDeleteErrors[v.id]}
-                />
-              </Box>
-            ))}
+      {/* Accordion list */}
+      <AccordionRoot
+        multiple
+        collapsible
+        value={expandedItems}
+        onValueChange={(e) => setExpandedItems(e.value)}
+        mt={SPACING[2]}
+      >
+        {ingredients.map((ingredient: IngredientResponse) => {
+          const hasVariants = ingredient.ingredient_variants.length > 0;
+          const isAddingHere = addingVariantFor === ingredient.id;
+          const isHovered = hoveredIngredient === ingredient.id;
+          const isEditing = editingIngredient === ingredient.id;
 
-            {/* Add variant row */}
-            {addingVariantFor === ingredient.id && (
-              <Box pl={SPACING[8]} px={SPACING[3]} py={SPACING[1]}>
-                <InlineEditInput
-                  value=""
-                  placeholder="Add variant"
-                  onSave={(variant) =>
-                    addVariantMutation.mutate({
-                      ingredientId: ingredient.id,
-                      variant,
-                    })
-                  }
-                  onCancel={() => setAddingVariantFor(null)}
-                />
-              </Box>
-            )}
-          </Box>
-        ))}
-      </Flex>
+          return (
+            <AccordionItem key={ingredient.id} value={ingredient.id}>
+              {/* Trigger row */}
+              <Flex
+                align="center"
+                onMouseEnter={() => setHoveredIngredient(ingredient.id)}
+                onMouseLeave={() => setHoveredIngredient(null)}
+              >
+                <AccordionItemTrigger
+                  flex={1}
+                  cursor={hasVariants ? "pointer" : "default"}
+                >
+                  {isEditing ? (
+                    <Box flex={1} onClick={(e) => e.stopPropagation()}>
+                      <InlineEditInput
+                        value={ingredient.name}
+                        onSave={(name) => {
+                          updateIngredientMutation.mutate({
+                            id: ingredient.id,
+                            name,
+                          });
+                          setEditingIngredient(null);
+                        }}
+                        onCancel={() => setEditingIngredient(null)}
+                      />
+                    </Box>
+                  ) : (
+                    <Box
+                      flex={1}
+                      textAlign="left"
+                      fontWeight={FONT_WEIGHTS.medium}
+                      cursor="text"
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingIngredient(ingredient.id);
+                      }}
+                    >
+                      <HighlightedText text={ingredient.name} query={search} />
+                    </Box>
+                  )}
+
+                  {hasVariants && (
+                    <AccordionItemIndicator
+                      data-testid={`accordion-indicator-${ingredient.id}`}
+                    />
+                  )}
+                </AccordionItemTrigger>
+
+                {/* Hover action buttons — outside the trigger to avoid nested buttons */}
+                <Flex
+                  opacity={isHovered && !isEditing ? 1 : 0}
+                  transition="opacity 0.15s ease"
+                  gap={SPACING[1]}
+                  flexShrink={0}
+                >
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label={`Add variant to ${ingredient.name}`}
+                    onClick={() => handleAddVariantClick(ingredient.id)}
+                  >
+                    <Plus size={ICON_SIZES.sm} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label={`Delete ${ingredient.name}`}
+                    onClick={() =>
+                      deleteIngredientMutation.mutate(ingredient.id)
+                    }
+                  >
+                    <Trash2 size={ICON_SIZES.sm} />
+                  </Button>
+                </Flex>
+              </Flex>
+
+              {/* Inline delete error */}
+              {deleteErrors[ingredient.id] && (
+                <Box px={SPACING[3]} pb={SPACING[1]}>
+                  <BodyText secondary>{deleteErrors[ingredient.id]}</BodyText>
+                </Box>
+              )}
+
+              {/* Content — only rendered when there's something to show */}
+              {(hasVariants || isAddingHere) && (
+                <AccordionItemContent>
+                  <Box px={SPACING[3]} pt={SPACING[2]} pb={SPACING[1]}>
+                    <Caption>Variants</Caption>
+                  </Box>
+
+                  {ingredient.ingredient_variants.map((v) => (
+                    <EditableListItem
+                      key={v.id}
+                      name={v.variant}
+                      nameDisplay={
+                        <BodyText>
+                          <HighlightedText text={v.variant} query={search} />
+                        </BodyText>
+                      }
+                      onSave={(variant) =>
+                        updateVariantMutation.mutate({
+                          ingredientId: ingredient.id,
+                          variantId: v.id,
+                          variant,
+                        })
+                      }
+                      onDelete={() =>
+                        deleteVariantMutation.mutate({
+                          ingredientId: ingredient.id,
+                          variantId: v.id,
+                        })
+                      }
+                      inlineError={variantDeleteErrors[v.id]}
+                    />
+                  ))}
+
+                  {isAddingHere && (
+                    <Box px={SPACING[3]} py={SPACING[1]}>
+                      <InlineEditInput
+                        value=""
+                        placeholder="Variant name"
+                        onSave={(variant) =>
+                          addVariantMutation.mutate({
+                            ingredientId: ingredient.id,
+                            variant,
+                          })
+                        }
+                        onCancel={() => handleCancelAddVariant(ingredient)}
+                      />
+                    </Box>
+                  )}
+                </AccordionItemContent>
+              )}
+            </AccordionItem>
+          );
+        })}
+      </AccordionRoot>
 
       {/* Pagination */}
       {meta && meta.totalPages > 1 && (

@@ -7,7 +7,6 @@ interface InlineEditInputProps {
   onCancel: () => void;
   placeholder?: string;
   autoFocus?: boolean;
-  onBlur?: () => void;
 }
 
 export function InlineEditInput({
@@ -16,7 +15,6 @@ export function InlineEditInput({
   onCancel,
   placeholder,
   autoFocus = true,
-  onBlur,
 }: InlineEditInputProps) {
   const [draft, setDraft] = useState(value);
 
@@ -35,7 +33,7 @@ export function InlineEditInput({
       placeholder={placeholder}
       onChange={(e) => setDraft(e.target.value)}
       onKeyDown={handleKeyDown}
-      onBlur={onBlur}
+      onBlur={onCancel}
       autoFocus={autoFocus}
     />
   );

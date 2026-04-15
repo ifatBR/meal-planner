@@ -29,10 +29,10 @@ vi.mock('@/hooks/useToast', () => ({
 }));
 
 function page(
-  ingredients: ingredientsApi.IngredientsPage['ingredients'],
+  items: ingredientsApi.IngredientsPage['items'],
   meta: ingredientsApi.IngredientsPage['meta'] = { page: 1, totalPages: 1 },
 ): ingredientsApi.IngredientsPage {
-  return { ingredients, meta };
+  return { items, meta };
 }
 
 const tomato = {
@@ -43,6 +43,14 @@ const tomato = {
   workspace_id: 'w1',
   created_at: new Date(),
   updated_at: new Date(),
+};
+
+const tomatoWithVariants = {
+  ...tomato,
+  ingredient_variants: [
+    { id: 'v1', variant: 'Cherry Tomato' },
+    { id: 'v2', variant: 'Plum Tomato' },
+  ],
 };
 
 function renderTab() {
@@ -61,12 +69,17 @@ function renderTab() {
   );
 }
 
-// Helper: returns the inline edit input (not the search box).
-// The search box has a placeholder; InlineEditInput does not.
+// Expand an accordion item by clicking its indicator chevron.
+async function expandItem(user: ReturnType<typeof userEvent.setup>, ingredientId: string) {
+  const indicator = await screen.findByTestId(`accordion-indicator-${ingredientId}`);
+  await user.click(indicator);
+}
+
+// Returns the inline edit input (not the search box).
 function getEditInput() {
   return screen
     .getAllByRole('textbox')
-    .find((el) => !(el as HTMLInputElement).placeholder)!;
+    .find((el) => (el as HTMLInputElement).placeholder !== 'Search ingredients…')!;
 }
 
 beforeEach(() => {
@@ -103,45 +116,114 @@ describe('IngredientsTab — loading / error / empty', () => {
 // ── List rendering ──────────────────────────────────────────────────────────
 
 describe('IngredientsTab — list', () => {
-  it('renders parent ingredient names', async () => {
-    vi.mocked(ingredientsApi.fetchIngredients).mockResolvedValue(
-      page([
-        tomato,
-        { ...tomato, id: '2', name: 'Basil' },
-      ]),
-    );
-    renderTab();
-    await waitFor(() => expect(screen.getByText('Tomato')).toBeInTheDocument());
-    expect(screen.getByText('Basil')).toBeInTheDocument();
-  });
-
-  it('renders variant names under their parent', async () => {
-    vi.mocked(ingredientsApi.fetchIngredients).mockResolvedValue(
-      page([
-        {
-          ...tomato,
-          ingredient_variants: [
-            { id: 'v1', variant: 'Cherry Tomato' },
-            { id: 'v2', variant: 'Plum Tomato' },
-          ],
-        },
-      ]),
-    );
-    renderTab();
-    await waitFor(() => expect(screen.getByText('Tomato')).toBeInTheDocument());
-    expect(screen.getByText('Cherry Tomato')).toBeInTheDocument();
-    expect(screen.getByText('Plum Tomato')).toBeInTheDocument();
-  });
-
   it('renders a search input', async () => {
     vi.mocked(ingredientsApi.fetchIngredients).mockResolvedValue(page([tomato]));
     renderTab();
     await waitFor(() => expect(screen.getByText('Tomato')).toBeInTheDocument());
     expect(screen.getByPlaceholderText('Search ingredients…')).toBeInTheDocument();
   });
+
+  it('renders parent ingredient names', async () => {
+    vi.mocked(ingredientsApi.fetchIngredients).mockResolvedValue(
+      page([tomato, { ...tomato, id: '2', name: 'Basil' }]),
+    );
+    renderTab();
+    await waitFor(() => expect(screen.getByText('Tomato')).toBeInTheDocument());
+    expect(screen.getByText('Basil')).toBeInTheDocument();
+  });
 });
 
-// ── Search / debounce ───────────────────────────────────────────────────────
+// ── Accordion behaviour ─────────────────────────────────────────────────────
+
+describe('IngredientsTab — accordion', () => {
+  it('accordion items are closed by default: variants are not visible', async () => {
+    vi.mocked(ingredientsApi.fetchIngredients).mockResolvedValue(
+      page([tomatoWithVariants]),
+    );
+    renderTab();
+    await waitFor(() => expect(screen.getByText('Tomato')).toBeInTheDocument());
+    expect(screen.queryByText('Cherry Tomato')).not.toBeVisible();
+  });
+
+  it('clicking the accordion indicator expands the item and shows variants', async () => {
+    const user = userEvent.setup();
+    vi.mocked(ingredientsApi.fetchIngredients).mockResolvedValue(
+      page([tomatoWithVariants]),
+    );
+    renderTab();
+    await waitFor(() => expect(screen.getByText('Tomato')).toBeInTheDocument());
+
+    await expandItem(user, '1');
+
+    await waitFor(() =>
+      expect(screen.getByText('Cherry Tomato')).toBeVisible(),
+    );
+    expect(screen.getByText('Plum Tomato')).toBeVisible();
+  });
+
+  it('ingredients with no variants have no expand indicator', async () => {
+    vi.mocked(ingredientsApi.fetchIngredients).mockResolvedValue(page([tomato]));
+    renderTab();
+    await waitFor(() => expect(screen.getByText('Tomato')).toBeInTheDocument());
+    expect(screen.queryByTestId('accordion-indicator-1')).not.toBeInTheDocument();
+  });
+
+  it('ingredients with variants have an expand indicator', async () => {
+    vi.mocked(ingredientsApi.fetchIngredients).mockResolvedValue(
+      page([tomatoWithVariants]),
+    );
+    renderTab();
+    await waitFor(() => expect(screen.getByText('Tomato')).toBeInTheDocument());
+    expect(screen.getByTestId('accordion-indicator-1')).toBeInTheDocument();
+  });
+
+  it('clicking "+" auto-expands the accordion item and shows inline input', async () => {
+    const user = userEvent.setup();
+    vi.mocked(ingredientsApi.fetchIngredients).mockResolvedValue(page([tomato]));
+    renderTab();
+    await waitFor(() => expect(screen.getByText('Tomato')).toBeInTheDocument());
+
+    await user.click(
+      screen.getByRole('button', { name: /add variant to tomato/i }),
+    );
+
+    await waitFor(() => expect(getEditInput()).toBeInTheDocument());
+    expect(screen.getByText('Variants')).toBeVisible();
+  });
+
+  it('search match auto-expands the relevant accordion item', async () => {
+    const user = userEvent.setup();
+    vi.mocked(ingredientsApi.fetchIngredients).mockResolvedValue(
+      page([tomatoWithVariants]),
+    );
+    renderTab();
+    await waitFor(() => expect(screen.getByText('Tomato')).toBeInTheDocument());
+
+    // Accordion is closed initially
+    expect(screen.getByTestId('accordion-indicator-1')).toHaveAttribute(
+      'data-state',
+      'closed',
+    );
+
+    vi.mocked(ingredientsApi.fetchIngredients).mockResolvedValue(
+      page([tomatoWithVariants]),
+    );
+    await user.type(
+      screen.getByPlaceholderText('Search ingredients…'),
+      'cherry',
+    );
+
+    // After debounce + auto-expand, the accordion item should be open
+    await waitFor(() =>
+      expect(screen.getByTestId('accordion-indicator-1')).toHaveAttribute(
+        'data-state',
+        'open',
+      ),
+    );
+  });
+});
+
+// ── Search ──────────────────────────────────────────────────────────────────
 
 describe('IngredientsTab — search', () => {
   it('calls fetchIngredients with the typed search term after debounce', async () => {
@@ -230,7 +312,7 @@ describe('IngredientsTab — update ingredient', () => {
     await waitFor(() => expect(screen.getByText('Tomato')).toBeInTheDocument());
 
     await user.click(screen.getByText('Tomato'));
-    const input = getEditInput();
+    const input = await screen.findByDisplayValue('Tomato');
     await user.clear(input);
     await user.type(input, 'Cherry Tomato');
     await user.keyboard('{Enter}');
@@ -242,7 +324,7 @@ describe('IngredientsTab — update ingredient', () => {
     );
   });
 
-  it('shows a toast and reverts on update failure', async () => {
+  it('shows a toast on update failure', async () => {
     const user = userEvent.setup();
     vi.mocked(ingredientsApi.fetchIngredients).mockResolvedValue(page([tomato]));
     vi.mocked(ingredientsApi.updateIngredient).mockRejectedValue(new Error('Server error'));
@@ -250,7 +332,7 @@ describe('IngredientsTab — update ingredient', () => {
     await waitFor(() => expect(screen.getByText('Tomato')).toBeInTheDocument());
 
     await user.click(screen.getByText('Tomato'));
-    const input = getEditInput();
+    const input = await screen.findByDisplayValue('Tomato');
     await user.clear(input);
     await user.type(input, 'Cherry Tomato');
     await user.keyboard('{Enter}');
@@ -358,13 +440,13 @@ describe('IngredientsTab — create ingredient', () => {
 // ── Add variant ─────────────────────────────────────────────────────────────
 
 describe('IngredientsTab — add variant', () => {
-  it('shows inline input when Add variant is clicked', async () => {
+  it('clicking "+" shows inline input inside expanded accordion', async () => {
     const user = userEvent.setup();
     vi.mocked(ingredientsApi.fetchIngredients).mockResolvedValue(page([tomato]));
     renderTab();
     await waitFor(() => expect(screen.getByText('Tomato')).toBeInTheDocument());
 
-    await user.click(screen.getByRole('button', { name: /add variant/i }));
+    await user.click(screen.getByRole('button', { name: /add variant to tomato/i }));
     expect(getEditInput()).toBeInTheDocument();
   });
 
@@ -375,7 +457,7 @@ describe('IngredientsTab — add variant', () => {
     renderTab();
     await waitFor(() => expect(screen.getByText('Tomato')).toBeInTheDocument());
 
-    await user.click(screen.getByRole('button', { name: /add variant/i }));
+    await user.click(screen.getByRole('button', { name: /add variant to tomato/i }));
     await user.type(getEditInput(), 'Cherry Tomato');
     await user.keyboard('{Enter}');
 
@@ -393,14 +475,12 @@ describe('IngredientsTab — add variant', () => {
     renderTab();
     await waitFor(() => expect(screen.getByText('Tomato')).toBeInTheDocument());
 
-    await user.click(screen.getByRole('button', { name: /add variant/i }));
+    await user.click(screen.getByRole('button', { name: /add variant to tomato/i }));
     await user.type(getEditInput(), 'Cherry');
     await user.keyboard('{Enter}');
 
     await waitFor(() =>
-      expect(mockToastError).toHaveBeenCalledWith(
-        'Failed to add variant. Please try again.',
-      ),
+      expect(mockToastError).toHaveBeenCalledWith('Failed to add variant. Please try again.'),
     );
   });
 });
@@ -411,16 +491,18 @@ describe('IngredientsTab — update variant', () => {
   it('calls PATCH variant with correct params on save', async () => {
     const user = userEvent.setup();
     vi.mocked(ingredientsApi.fetchIngredients).mockResolvedValue(
-      page([
-        {
-          ...tomato,
-          ingredient_variants: [{ id: 'v1', variant: 'Cherry Tomato' }],
-        },
-      ]),
+      page([tomatoWithVariants]),
     );
-    vi.mocked(ingredientsApi.updateVariant).mockResolvedValue({ id: 'v1', variant: 'Grape Tomato' });
+    vi.mocked(ingredientsApi.updateVariant).mockResolvedValue({
+      id: 'v1',
+      variant: 'Grape Tomato',
+    });
     renderTab();
-    await waitFor(() => expect(screen.getByText('Cherry Tomato')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Tomato')).toBeInTheDocument());
+
+    // Expand accordion first
+    await expandItem(user, '1');
+    await waitFor(() => expect(screen.getByText('Cherry Tomato')).toBeVisible());
 
     await user.click(screen.getByText('Cherry Tomato'));
     const input = getEditInput();
@@ -442,19 +524,18 @@ describe('IngredientsTab — delete variant', () => {
   it('shows inline error on 409 and does not show a toast', async () => {
     const user = userEvent.setup();
     vi.mocked(ingredientsApi.fetchIngredients).mockResolvedValue(
-      page([
-        {
-          ...tomato,
-          ingredient_variants: [{ id: 'v1', variant: 'Cherry Tomato' }],
-        },
-      ]),
+      page([{ ...tomatoWithVariants, ingredient_variants: [{ id: 'v1', variant: 'Cherry Tomato' }] }]),
     );
     vi.mocked(ingredientsApi.deleteVariant).mockRejectedValue({
       statusCode: 409,
       message: 'Variant used in a recipe',
     });
     renderTab();
-    await waitFor(() => expect(screen.getByText('Cherry Tomato')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Tomato')).toBeInTheDocument());
+
+    // Expand accordion first
+    await expandItem(user, '1');
+    await waitFor(() => expect(screen.getByText('Cherry Tomato')).toBeVisible());
 
     await user.click(
       screen.getByRole('button', { name: /delete cherry tomato/i }),
@@ -469,16 +550,15 @@ describe('IngredientsTab — delete variant', () => {
   it('invalidates the query after successful delete', async () => {
     const user = userEvent.setup();
     vi.mocked(ingredientsApi.fetchIngredients).mockResolvedValue(
-      page([
-        {
-          ...tomato,
-          ingredient_variants: [{ id: 'v1', variant: 'Cherry Tomato' }],
-        },
-      ]),
+      page([{ ...tomatoWithVariants, ingredient_variants: [{ id: 'v1', variant: 'Cherry Tomato' }] }]),
     );
     vi.mocked(ingredientsApi.deleteVariant).mockResolvedValue(undefined);
     renderTab();
-    await waitFor(() => expect(screen.getByText('Cherry Tomato')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Tomato')).toBeInTheDocument());
+
+    // Expand accordion first
+    await expandItem(user, '1');
+    await waitFor(() => expect(screen.getByText('Cherry Tomato')).toBeVisible());
 
     await user.click(
       screen.getByRole('button', { name: /delete cherry tomato/i }),

@@ -60,4 +60,12 @@ describe('InlineEditInput', () => {
     await user.keyboard('{Escape}');
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
+
+  it('calls onCancel when the input loses focus', async () => {
+    const onCancel = vi.fn();
+    const user = userEvent.setup();
+    renderInput({ value: 'Breakfast', onCancel });
+    await user.click(document.body);
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  });
 });

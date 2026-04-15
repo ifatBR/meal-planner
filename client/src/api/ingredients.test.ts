@@ -16,7 +16,7 @@ beforeEach(() => {
   setAccessTokenGetter(() => 'test-token');
   fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
     new Response(
-      JSON.stringify({ data: { ingredients: [], meta: { page: 1, totalPages: 1 } } }),
+      JSON.stringify({ data: { items: [], meta: { page: 1, totalPages: 1 } } }),
       { status: 200 },
     ),
   );
@@ -31,8 +31,8 @@ function okJson(data: unknown) {
   return new Response(JSON.stringify({ data }), { status: 200 });
 }
 
-function okPage(ingredients: unknown, meta = { page: 1, totalPages: 1 }) {
-  return new Response(JSON.stringify({ data: { ingredients, meta } }), { status: 200 });
+function okPage(items: unknown, meta = { page: 1, totalPages: 1 }) {
+  return new Response(JSON.stringify({ data: { items, meta } }), { status: 200 });
 }
 
 function errorJson(body: unknown, status = 400) {
@@ -80,7 +80,7 @@ describe('fetchIngredients', () => {
     const items = [{ id: '1', name: 'Tomato', ingredient_variants: [] }];
     fetchSpy.mockResolvedValueOnce(okPage(items, { page: 1, totalPages: 3 }));
     const result = await fetchIngredients(1);
-    expect(result.ingredients).toEqual(items);
+    expect(result.items).toEqual(items);
     expect(result.meta).toEqual({ page: 1, totalPages: 3 });
   });
 
