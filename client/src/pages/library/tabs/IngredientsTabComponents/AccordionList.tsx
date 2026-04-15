@@ -163,8 +163,13 @@ export function AccordionList({
                   variant="ghost"
                   size="sm"
                   aria-label={`Delete ${capitalizeFirst(ingredient.name)}`}
-                  tooltip={`Delete ${capitalizeFirst(ingredient.name)}`}
+                  tooltip={
+                    hasVariants
+                      ? "Ingredient with variants can't be deleted"
+                      : `Delete ${capitalizeFirst(ingredient.name)}`
+                  }
                   onClick={() => deleteIngredientMutation.mutate(ingredient.id)}
+                  disabled={hasVariants}
                 >
                   <Trash2 size={ICON_SIZES.sm} />
                 </Button>

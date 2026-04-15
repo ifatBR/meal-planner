@@ -56,6 +56,13 @@ export const conflictError = (entity?: string) =>
     HTTP_STATUS.CONFLICT,
   )();
 
+export const ingredientHasVariantsError = () =>
+  makeError(
+    'ingredient_has_variants',
+    'Delete all variants before deleting this ingredient.',
+    HTTP_STATUS.CONFLICT,
+  )();
+
 export const ruleViolationError = (message?: string) =>
   makeError(
     ERROR_CODES.RULE_VIOLATION,

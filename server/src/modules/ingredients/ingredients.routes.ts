@@ -82,9 +82,7 @@ async function ingredientRoutes(fastify: FastifyInstance) {
       preHandler: [fastify.authenticate, fastify.requirePermission(PERMISSIONS.INGREDIENTS.DELETE)],
     },
     async (request) => {
-      console.log('request.params:', request.params);
       const params = IngredientParamsSchema.parse(request.params);
-      console.log('params:', params);
       const result = await deleteIngredient(fastify.prisma, params.id, request.user.workspaceId);
       return { data: result };
     },

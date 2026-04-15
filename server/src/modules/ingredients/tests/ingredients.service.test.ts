@@ -94,16 +94,27 @@ describe('updateIngredient', () => {
 });
 
 describe('deleteIngredient', () => {
+  it('deletes and returns id when ingredient has no variants', async () => {
+    vi.mocked(repo.getIngredientById).mockResolvedValue(mockIngredient);
+    vi.mocked(repo.deleteIngredient).mockResolvedValue(mockIngredient);
+    const result = await deleteIngredient(mockPrisma, 'ing-1', 'ws-1');
+    expect(result.id).toBe('ing-1');
+  });
+
   it('throws 404 when not found', async () => {
     vi.mocked(repo.getIngredientById).mockResolvedValue(null);
     await expect(deleteIngredient(mockPrisma, 'ing-1', 'ws-1')).rejects.toThrow();
   });
 
-  it('deletes and returns id', async () => {
-    vi.mocked(repo.getIngredientById).mockResolvedValue(mockIngredient);
-    vi.mocked(repo.deleteIngredient).mockResolvedValue(mockIngredient);
-    const result = await deleteIngredient(mockPrisma, 'ing-1', 'ws-1');
-    expect(result.id).toBe('ing-1');
+  it('throws 409 when ingredient has variants', async () => {
+    vi.mocked(repo.getIngredientById).mockResolvedValue({
+      ...mockIngredient,
+      ingredient_variants: [{ id: 'var-1', variant: 'aubergine' }],
+    });
+    await expect(deleteIngredient(mockPrisma, 'ing-1', 'ws-1')).rejects.toMatchObject({
+      statusCode: 409,
+      code: 'ingredient_has_variants',
+    });
   });
 });
 

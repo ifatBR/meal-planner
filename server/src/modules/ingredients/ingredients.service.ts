@@ -14,7 +14,7 @@ import {
 } from './ingredients.repository';
 import { hasWorkspaceConflict, normalise } from './domain/ingredients.rules';
 import { findMatchingIngredient } from './domain/ingredients.algorithms';
-import { notFoundError, conflictError, isP2002 } from '../../utils/errors';
+import { notFoundError, conflictError, ingredientHasVariantsError, isP2002 } from '../../utils/errors';
 
 export const listIngredients = async (
   prisma: PrismaClient,
@@ -121,6 +121,7 @@ export const updateIngredient = async (
 export const deleteIngredient = async (prisma: PrismaClient, id: string, workspaceId: string) => {
   const ingredient = await getIngredientById(prisma, id, workspaceId);
   if (!ingredient) throw notFoundError('ingredient');
+  if (ingredient.ingredient_variants.length > 0) throw ingredientHasVariantsError();
   await deleteIngredientRepo(prisma, id);
   return { id };
 };
