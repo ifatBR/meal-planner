@@ -1,14 +1,14 @@
-import { COLORS } from '../styles/designTokens';
+import { COLORS } from "../styles/designTokens";
 
 export const ROUTES = {
-  LOGIN: '/login',
-  LIBRARY: '/library',
-  SCHEDULES: '/schedules',
+  LOGIN: "/login",
+  LIBRARY: "/library",
+  SCHEDULES: "/schedules",
   SCHEDULE_SETTINGS: (id: string) => `/schedules/${id}/settings`,
   SCHEDULE_CALENDAR: (id: string) => `/schedules/${id}/calendar`,
   // For route definitions
-  SCHEDULE_SETTINGS_PATTERN: '/schedules/:id/settings',
-  SCHEDULE_CALENDAR_PATTERN: '/schedules/:id/calendar',
+  SCHEDULE_SETTINGS_PATTERN: "/schedules/:id/settings",
+  SCHEDULE_CALENDAR_PATTERN: "/schedules/:id/calendar",
 } as const;
 
 export const MEAL_TYPE_COLORS = [
@@ -19,7 +19,6 @@ export const MEAL_TYPE_COLORS = [
   COLORS.palette[5],
   COLORS.palette[6],
   COLORS.palette[7],
-  COLORS.palette[8],
 ] as const;
 
-export const API_BASE = '/api/v1';
+export const API_BASE = "/api/v1";
