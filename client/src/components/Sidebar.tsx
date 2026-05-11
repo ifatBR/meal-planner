@@ -21,7 +21,7 @@ import {
   Z_INDEX,
 } from "@/styles/designTokens";
 import { ROUTES } from "@/utils/constants";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/context/AuthContext";
 import { NavItem } from "./NavItem";
 
 interface SidebarProps {
@@ -43,8 +43,6 @@ const NAV_ITEMS: NavItemDef[] = [
 export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
   const { pathname } = useLocation();
   const { user, logout } = useAuth();
-  console.log("user:", user);
-  console.log("user:", user ? `${user.firstName} ${user.lastName}` : "");
 
   return (
     <Flex

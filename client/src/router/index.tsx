@@ -1,13 +1,13 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom';
-import { ROUTES } from '../utils/constants';
-import { ProtectedRoute } from './ProtectedRoute';
-import { AppLayout } from '../components/AppLayout';
-import { useAuth } from '../hooks/useAuth';
-import { LoginPage } from '../pages/login/LoginPage';
-import { LibraryPage } from '../pages/library/LibraryPage';
+import { createBrowserRouter, Navigate } from "react-router-dom";
+import { ROUTES } from "../utils/constants";
+import { ProtectedRoute } from "./ProtectedRoute";
+import { AppLayout } from "../components/AppLayout";
+import { useAuth } from "../context/AuthContext";
+import { LoginPage } from "../pages/login/LoginPage";
+import { LibraryPage } from "../pages/library/LibraryPage";
 
 const Placeholder = ({ name }: { name: string }) => (
-  <div style={{ padding: '2rem', fontFamily: 'sans-serif' }}>{name}</div>
+  <div style={{ padding: "2rem", fontFamily: "sans-serif" }}>{name}</div>
 );
 
 function LoginGuard() {
@@ -20,7 +20,7 @@ function LoginGuard() {
 export const routeConfig = [
   { path: ROUTES.LOGIN, element: <LoginGuard /> },
   {
-    path: '/',
+    path: "/",
     element: (
       <ProtectedRoute>
         <AppLayout />
@@ -30,8 +30,14 @@ export const routeConfig = [
       { index: true, element: <Navigate to={ROUTES.SCHEDULES} replace /> },
       { path: ROUTES.LIBRARY, element: <LibraryPage /> },
       { path: ROUTES.SCHEDULES, element: <Placeholder name="Schedules" /> },
-      { path: ROUTES.SCHEDULE_SETTINGS_PATTERN, element: <Placeholder name="Settings" /> },
-      { path: ROUTES.SCHEDULE_CALENDAR_PATTERN, element: <Placeholder name="Calendar" /> },
+      {
+        path: ROUTES.SCHEDULE_SETTINGS_PATTERN,
+        element: <Placeholder name="Settings" />,
+      },
+      {
+        path: ROUTES.SCHEDULE_CALENDAR_PATTERN,
+        element: <Placeholder name="Calendar" />,
+      },
     ],
   },
 ];
