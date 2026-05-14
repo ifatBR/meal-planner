@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/Button";
 import { EditableListItem } from "@/components/EditableListItem";
 import { InlineEditInput } from "@/components/InlineEditInput";
-import { BodyText } from "@/components/Typography";
+import { EmptyState } from "@/components/EmptyState";
 import { useToast } from "@/hooks/useToast";
 import { COLORS, SPACING } from "@/styles/designTokens";
 import { LoadingError } from "@/components/LoadingError";
@@ -122,22 +122,11 @@ export function DishTypesTab() {
   // ── Empty state ──────────────────────────────────────────────────────────
   if (!dishTypes?.length && !addingNew) {
     return (
-      <Flex
-        direction="column"
-        align="flex-start"
-        gap={SPACING[4]}
-        pt={SPACING[6]}
-      >
-        <BodyText>No dish types yet.</BodyText>
-        <BodyText secondary>
-          Dish types categorise what kind of food a recipe is — for example
-          Salad, Soup, Main Course, or Dessert. They help organise your recipes
-          and are used when building layouts.
-        </BodyText>
-        <Button variant="primary" size="sm" onClick={() => setAddingNew(true)}>
-          Add your first dish type
-        </Button>
-      </Flex>
+      <EmptyState
+        title="No dish types yet."
+        description="Dish types categorise what kind of food a recipe is — for example Salad, Soup, Main Course, or Dessert. They help organise your recipes and are used when building layouts."
+        action={{ label: "Add your first dish type", onClick: () => setAddingNew(true) }}
+      />
     );
   }
 

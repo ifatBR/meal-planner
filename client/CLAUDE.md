@@ -381,6 +381,15 @@ Use `<LoadingError>` from `src/components/LoadingError.tsx` for all "section fai
 Props: `message`, `onRetry`.
 Never build inline error+retry UI in page components.
 
+### Empty state
+Use `<EmptyState>` from `src/components/EmptyState.tsx` for all empty list states in library tabs.
+Props: `title`, `description`, `action?: { label, onClick }`.
+- Every tab must show an `EmptyState` when its list is empty and no add-flow is active.
+- `title` should name the missing item type (e.g. "No meal types yet.").
+- `description` should explain what the item is and why the user should add one — make it specific to the item type, not generic.
+- `action` should link directly to the primary add action for that tab (e.g. "Add your first meal type").
+- Never build an inline empty state in a tab — always use `<EmptyState>`.
+
 ### Highlighted text
 Use `<HighlightedText>` from `src/components/HighlightedText.tsx` when rendering text that may contain a search match.
 Props: `text`, `highlight`.

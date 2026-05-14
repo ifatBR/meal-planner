@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/Button";
 import { EditableListItem } from "@/components/EditableListItem";
 import { InlineEditInput } from "@/components/InlineEditInput";
-import { BodyText } from "@/components/Typography";
+import { EmptyState } from "@/components/EmptyState";
 import { useToast } from "@/hooks/useToast";
 import { MEAL_TYPE_COLORS } from "@/utils/constants";
 import { RADII, SPACING } from "@/styles/designTokens";
@@ -124,22 +124,11 @@ export function MealTypesTab() {
   // ── Empty state ──────────────────────────────────────────────────────────
   if (!mealTypes?.length && !addingNew) {
     return (
-      <Flex
-        direction="column"
-        align="flex-start"
-        gap={SPACING[4]}
-        pt={SPACING[6]}
-      >
-        <BodyText>No meal types yet.</BodyText>
-        <BodyText secondary>
-          Meal types define when meals are served — for example Breakfast,
-          Lunch, and Dinner. They are used when building layouts and generating
-          schedules.
-        </BodyText>
-        <Button variant="primary" size="sm" onClick={() => setAddingNew(true)}>
-          Add your first meal type
-        </Button>
-      </Flex>
+      <EmptyState
+        title="No meal types yet."
+        description="Meal types define when meals are served — for example Breakfast, Lunch, and Dinner. They are used when building layouts and generating schedules."
+        action={{ label: "Add your first meal type", onClick: () => setAddingNew(true) }}
+      />
     );
   }
 

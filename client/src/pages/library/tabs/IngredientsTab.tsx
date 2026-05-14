@@ -20,6 +20,7 @@ import { Button } from "@/components/Button";
 import { InlineEditInput } from "@/components/InlineEditInput";
 import { SearchInput } from "@/components/SearchInput";
 import { BodyText } from "@/components/Typography";
+import { EmptyState } from "@/components/EmptyState";
 import { useToast } from "@/hooks/useToast";
 import { MAX_WIDTHS, SPACING } from "@/styles/designTokens";
 import { AccordionList } from "./IngredientsTabComponents/AccordionList";
@@ -301,25 +302,11 @@ export function IngredientsTab() {
 
   if (!search && !ingredients.length && !addingIngredient) {
     return (
-      <Flex
-        direction="column"
-        align="flex-start"
-        gap={SPACING[4]}
-        pt={SPACING[6]}
-      >
-        <BodyText>No ingredients yet.</BodyText>
-        <BodyText secondary>
-          Ingredients are the building blocks of your recipes. Add them here and
-          use them when creating recipes.
-        </BodyText>
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={() => setAddingIngredient(true)}
-        >
-          Add your first ingredient
-        </Button>
-      </Flex>
+      <EmptyState
+        title="No ingredients yet."
+        description="Ingredients are the building blocks of your recipes. Add them here and use them when creating recipes."
+        action={{ label: "Add your first ingredient", onClick: () => setAddingIngredient(true) }}
+      />
     );
   }
 

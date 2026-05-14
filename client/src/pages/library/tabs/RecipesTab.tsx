@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Flex, Spinner } from "@chakra-ui/react";
 import { fetchRecipes, deleteRecipe } from "@/api/recipes";
 import { ClickableListItem } from "@/components/ClickableListItem";
-import { BodyText } from "@/components/Typography";
+import { EmptyState } from "@/components/EmptyState";
 import { useToast } from "@/hooks/useToast";
 import { LoadingError } from "@/components/LoadingError";
 import { Pagination } from "@/components/Pagination";
@@ -22,6 +22,10 @@ export function RecipesTab() {
 
   const handleRecipeClick = (_id: string) => {
     // TODO: navigate to recipe detail
+  };
+
+  const handleAddRecipe = () => {
+    // TODO: navigate to recipe creation
   };
 
   const deleteMutation = useMutation({
@@ -70,18 +74,11 @@ export function RecipesTab() {
   // ── Empty state ──────────────────────────────────────────────────────────
   if (!data?.items.length) {
     return (
-      <Flex
-        direction="column"
-        align="flex-start"
-        gap={SPACING[4]}
-        pt={SPACING[6]}
-      >
-        <BodyText>No recipes yet.</BodyText>
-        <BodyText secondary>
-          Recipes are the dishes that fill your meal schedule. Add your first
-          recipe to get started.
-        </BodyText>
-      </Flex>
+      <EmptyState
+        title="No recipes yet."
+        description="Recipes are the dishes that fill your meal schedule. Add your first recipe to get started."
+        action={{ label: "Add your first recipe", onClick: handleAddRecipe }}
+      />
     );
   }
 
