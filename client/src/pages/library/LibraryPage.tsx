@@ -5,6 +5,7 @@ import { MealTypesTab } from './tabs/MealTypesTab';
 import { DishTypesTab } from './tabs/DishTypesTab';
 import { IngredientsTab } from './tabs/IngredientsTab';
 import { RecipesTab } from './tabs/RecipesTab';
+import { LayoutsTab } from './tabs/LayoutsTab';
 import {
   BORDER_WIDTHS,
   COLORS,
@@ -18,7 +19,7 @@ const TABS = [
   { label: 'Dish Types', content: <DishTypesTab /> },
   { label: 'Ingredients', content: <IngredientsTab /> },
   { label: 'Recipes', content: <RecipesTab /> },
-  { label: 'Layouts', content: null },
+  { label: 'Layouts', content: <LayoutsTab /> },
 ] as const;
 
 export function LibraryPage() {

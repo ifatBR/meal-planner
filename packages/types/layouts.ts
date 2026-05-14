@@ -45,3 +45,11 @@ export const CloneLayoutBodySchema = z.object({
   name: z.string().min(1).max(50),
 });
 export type CloneLayoutBody = z.infer<typeof CloneLayoutBodySchema>;
+
+export type LayoutListItem = {
+  id: string;
+  name: string;
+  inUse: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
