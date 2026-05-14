@@ -3,9 +3,14 @@ import { Flex } from "@chakra-ui/react";
 import { Button } from "./Button";
 import { BodyText } from "./Typography";
 
+interface PaginationMeta {
+  page: number;
+  totalPages: number;
+}
+
 interface PaginationProps {
-  meta: any;
-  setPage: (func: (number: number) => number) => void;
+  meta: PaginationMeta;
+  setPage: (func: (page: number) => number) => void;
 }
 export function Pagination({ meta, setPage }: PaginationProps) {
   return (

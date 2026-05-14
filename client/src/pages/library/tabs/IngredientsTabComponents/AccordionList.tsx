@@ -31,11 +31,11 @@ interface AccordionListProps {
   addingVariantFor: string | null;
   setHoveredIngredient: (id: string | null) => void;
   hoveredIngredient: string | null;
-  updateIngredientMutation: { mutate: any };
-  deleteIngredientMutation: { mutate: any };
-  updateVariantMutation: { mutate: any };
-  deleteVariantMutation: { mutate: any };
-  addVariantMutation: { mutate: any };
+  updateIngredientMutation: { mutate: (input: { id: string; name: string }) => void };
+  deleteIngredientMutation: { mutate: (id: string) => void };
+  updateVariantMutation: { mutate: (input: { ingredientId: string; variantId: string; variant: string }) => void };
+  deleteVariantMutation: { mutate: (input: { ingredientId: string; variantId: string }) => void };
+  addVariantMutation: { mutate: (input: { ingredientId: string; variant: string }) => void };
   search: string;
   handleAddVariantClick: (id: string) => void;
   handleCancelAddVariant: (ingredient: IngredientResponse) => void;
