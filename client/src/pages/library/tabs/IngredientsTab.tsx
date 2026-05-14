@@ -21,7 +21,7 @@ import { InlineEditInput } from "@/components/InlineEditInput";
 import { SearchInput } from "@/components/SearchInput";
 import { BodyText } from "@/components/Typography";
 import { useToast } from "@/hooks/useToast";
-import { SPACING } from "@/styles/designTokens";
+import { MAX_WIDTHS, SPACING } from "@/styles/designTokens";
 import { AccordionList } from "./IngredientsTabComponents/AccordionList";
 import { Pagination } from "@/components/Pagination";
 import { LoadingError } from "@/components/LoadingError";
@@ -326,7 +326,7 @@ export function IngredientsTab() {
   // ── List ──────────────────────────────────────────────────────────────────
 
   return (
-    <Box maxW="600px" pt={SPACING[4]}>
+    <Box maxW={MAX_WIDTHS.listItem} pt={SPACING[4]}>
       {/* Search */}
       <SearchInput
         placeholder="Search ingredients…"

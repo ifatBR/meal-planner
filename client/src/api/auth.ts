@@ -1,5 +1,7 @@
 import { API_BASE } from "../utils/constants";
 
+const AUTH_URL = `${API_BASE}/auth`;
+
 export interface LoginParams {
   email: string;
   password: string;
@@ -20,7 +22,7 @@ export interface LoginResponse {
 }
 
 export const login = async (params: LoginParams): Promise<LoginResponse> => {
-  const res = await fetch(`${API_BASE}/auth/login`, {
+  const res = await fetch(`${AUTH_URL}/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -32,14 +34,14 @@ export const login = async (params: LoginParams): Promise<LoginResponse> => {
 };
 
 export const logout = async (): Promise<void> => {
-  await fetch(`${API_BASE}/auth/logout`, {
+  await fetch(`${AUTH_URL}/logout`, {
     method: "POST",
     credentials: "include",
   });
 };
 
 export const refreshToken = async (): Promise<{ accessToken: string }> => {
-  const res = await fetch(`${API_BASE}/auth/refresh`, {
+  const res = await fetch(`${AUTH_URL}/refresh`, {
     method: "POST",
     credentials: "include",
   });
@@ -51,7 +53,7 @@ export const refreshToken = async (): Promise<{ accessToken: string }> => {
 export const getMe = async (
   accessToken: string,
 ): Promise<{ user: AuthUser }> => {
-  const res = await fetch(`${API_BASE}/auth/me`, {
+  const res = await fetch(`${AUTH_URL}/me`, {
     headers: { Authorization: `Bearer ${accessToken}` },
     credentials: "include",
   });

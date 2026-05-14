@@ -102,13 +102,22 @@ When a page or tab component grows too long, extract sub-components into a folde
 
 All fetch calls go through `apiFetch` from `src/api/apiClient.ts` — never use raw `fetch` directly. `apiFetch` automatically attaches `Authorization: Bearer <token>` and `credentials: 'include'`. Do not set these manually in individual API functions.
 
+Each API file must declare a module-level URL constant and use it in every function in that file — never inline the URL string in individual functions:
+
 ```typescript
 // api/mealTypes.ts
+const MEAL_TYPES_URL = `${API_BASE}/meal-types`;
+
 export const fetchMealTypes = async (): Promise<MealTypeResponse[]> => {
-  const res = await apiFetch(`${API_BASE}/meal-types`);
+  const res = await apiFetch(MEAL_TYPES_URL);
   if (!res.ok) throw await res.json();
   const { data } = await res.json();
   return data;
+};
+
+export const deleteMealType = async (id: string): Promise<void> => {
+  const res = await apiFetch(`${MEAL_TYPES_URL}/${id}`, { method: 'DELETE' });
+  if (!res.ok) throw await res.json();
 };
 ```
 
@@ -289,6 +298,7 @@ const color = MEAL_TYPE_COLORS[existingMealTypes.length % MEAL_TYPE_COLORS.lengt
 - **`designTokens.ts` is the only file that may contain raw hex values or pixel values.**
 - Never hardcode color, spacing, font, radius, or shadow values in components or any other file.
 - No local style overrides — if a one-off style is needed, add a token to `designTokens.ts` instead.
+- **When writing or editing a component, if a style value is generic enough to be reused (a width, a max-width, a z-index, a transition duration, an opacity, etc.) and it is not already in `designTokens.ts`, add it there first and then import it.** Do not leave it as a hardcoded inline value just because it only appears once.
 - All color names are semantic (describe purpose, not appearance). The palette is the only exception — numbered slots have no semantic meaning by design.
 
 ---

@@ -1,20 +1,20 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Box, Flex } from '@chakra-ui/react';
-import { Button } from '@/components/Button';
-import { Input } from '@/components/Input';
-import { FormField } from '@/components/FormField';
-import { PageTitle, BodyText } from '@/components/Typography';
-import { useAuth } from '@/hooks/useAuth';
-import { ROUTES } from '@/utils/constants';
-import { COLORS, RADII, SHADOWS, SPACING } from '@/styles/designTokens';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Box, Flex } from "@chakra-ui/react";
+import { Button } from "@/components/Button";
+import { Input } from "@/components/Input";
+import { FormField } from "@/components/FormField";
+import { PageTitle, BodyText } from "@/components/Typography";
+import { useAuth } from "@/context/AuthContext";
+import { ROUTES } from "@/utils/constants";
+import { COLORS, RADII, SHADOWS, SPACING } from "@/styles/designTokens";
 
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -26,19 +26,14 @@ export function LoginPage() {
       await login({ email, password });
       navigate(ROUTES.SCHEDULES, { replace: true });
     } catch {
-      setError('Invalid email or password. Please try again.');
+      setError("Invalid email or password. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Flex
-      minH="100vh"
-      align="center"
-      justify="center"
-      bg={COLORS.bg.base}
-    >
+    <Flex minH="100vh" align="center" justify="center" bg={COLORS.bg.base}>
       <Box
         as="form"
         onSubmit={handleSubmit}
@@ -79,11 +74,18 @@ export function LoginPage() {
 
           {error && (
             <BodyText secondary>
-              <Box as="span" color={COLORS.semantic.error}>{error}</Box>
+              <Box as="span" color={COLORS.semantic.error}>
+                {error}
+              </Box>
             </BodyText>
           )}
 
-          <Button type="submit" variant="primary" isLoading={isLoading} width="100%">
+          <Button
+            type="submit"
+            variant="primary"
+            isLoading={isLoading}
+            width="100%"
+          >
             Sign in
           </Button>
         </Flex>

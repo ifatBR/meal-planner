@@ -5,7 +5,7 @@ import { Button } from "@/components/Button";
 import { BodyText } from "@/components/Typography";
 import { InlineEditInput } from "@/components/InlineEditInput";
 import { Tooltip } from "@/components/ui/tooltip";
-import { COLORS, ICON_SIZES, RADII, SPACING } from "@/styles/designTokens";
+import { COLORS, ICON_SIZES, MAX_WIDTHS, RADII, SPACING } from "@/styles/designTokens";
 
 interface EditableListItemProps {
   name: string;
@@ -53,7 +53,7 @@ export function EditableListItem({
         py={SPACING[2]}
         borderRadius={RADII.sm}
         bg={hovered ? COLORS.bg.base : "transparent"}
-        maxW="600px"
+        maxW={MAX_WIDTHS.listItem}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         transition="background-color 0.15s ease"
