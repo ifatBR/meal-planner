@@ -179,6 +179,10 @@ export const ICON_SIZES = {
   lg: 24,
 } as const;
 
+export const MAX_WIDTHS = {
+  listItem: "600px",
+} as const;
+
 export const Z_INDEX = {
   sidebar: 100,
   modal: 200,

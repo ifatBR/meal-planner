@@ -1,5 +1,21 @@
 import { z } from 'zod';
 
+export type RecipeIngredientResponse = {
+  id: string;
+  displayName: string;
+  isMain: boolean;
+  measure?: { amount: number; unit: string };
+};
+
+export type RecipeResponse = {
+  id: string;
+  name: string;
+  instructions?: string;
+  dishTypes: { id: string; name: string }[];
+  mealTypes: { id: string; name: string }[];
+  ingredients: RecipeIngredientResponse[];
+};
+
 const RecipeIngredientInputSchema = z.object({
   id: z.string().uuid(),
   variantId: z.string().uuid().optional(),

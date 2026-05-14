@@ -4,6 +4,7 @@ import { PageTitle } from '@/components/Typography';
 import { MealTypesTab } from './tabs/MealTypesTab';
 import { DishTypesTab } from './tabs/DishTypesTab';
 import { IngredientsTab } from './tabs/IngredientsTab';
+import { RecipesTab } from './tabs/RecipesTab';
 import {
   BORDER_WIDTHS,
   COLORS,
@@ -16,7 +17,7 @@ const TABS = [
   { label: 'Meal Types', content: <MealTypesTab /> },
   { label: 'Dish Types', content: <DishTypesTab /> },
   { label: 'Ingredients', content: <IngredientsTab /> },
-  { label: 'Recipes', content: null },
+  { label: 'Recipes', content: <RecipesTab /> },
   { label: 'Layouts', content: null },
 ] as const;
 

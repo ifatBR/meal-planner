@@ -403,6 +403,15 @@ As new shared components are added (Card, Badge, Modal, BottomSheet, EmptyState,
 ## Key Conventions
 
 - Plain functions only — no classes.
+- If a UI element needs a handler that hasn't been implemented yet, still define it as a named function with a `// TODO` comment inside, and reference it by name on the component. Never leave the prop unwired and never use an inline arrow. Example:
+  ```tsx
+  const handleRecipeClick = (id: string) => {
+    // TODO: navigate to recipe detail
+  };
+
+  <ClickableListItem onClick={() => handleRecipeClick(recipe.id)} ... />
+  ```
+  This keeps the interface complete and makes gaps easy to find and fill in.
 - No inline Zod schemas — import from `@app/types`.
 - No hardcoded strings for routes — use `ROUTES` constants from `src/utils/constants.ts`.
 - Search inputs are debounced 300ms — never fire on every keystroke.
