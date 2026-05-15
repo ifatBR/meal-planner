@@ -9,7 +9,7 @@ interface PaginationMeta {
 }
 
 interface PaginationProps {
-  meta: PaginationMeta;
+  meta?: PaginationMeta;
   setPage: (func: (page: number) => number) => void;
 }
 export function Pagination({ meta, setPage }: PaginationProps) {

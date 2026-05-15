@@ -23,7 +23,7 @@ export function LayoutsTab() {
     queryFn: fetchLayouts,
   });
 
-  const handleLayoutClick = (_id: string) => {
+  const handleLayoutClick = (_: string) => {
     // TODO: navigate to layout detail
   };
 

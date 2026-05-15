@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/no-fire-event.js",
+            "statusMessage": "Checking for fireEvent in test files..."
+          }
+        ]
+      }
+    ]
+  }
+}

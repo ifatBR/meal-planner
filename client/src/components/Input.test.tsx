@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { screen, fireEvent } from '@testing-library/react'
+import { screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { renderWithChakra as renderWithProviders } from '@/test/renderWithProviders'
 import { Input } from './Input'
 import { COLORS } from '@/styles/designTokens'
@@ -10,11 +11,12 @@ describe('Input', () => {
     expect(screen.getByPlaceholderText('Enter text')).toBeInTheDocument()
   })
 
-  it('calls onChange when typed into', () => {
+  it('calls onChange when typed into', async () => {
     const handleChange = vi.fn()
+    const user = userEvent.setup()
     renderWithProviders(<Input onChange={handleChange} />)
-    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'hello' } })
-    expect(handleChange).toHaveBeenCalledTimes(1)
+    await user.type(screen.getByRole('textbox'), 'hello')
+    expect(handleChange).toHaveBeenCalledTimes(5)
   })
 
   it('applies normal border color when isError is false', () => {

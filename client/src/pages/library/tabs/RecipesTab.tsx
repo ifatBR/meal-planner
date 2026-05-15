@@ -20,7 +20,7 @@ export function RecipesTab() {
     queryFn: () => fetchRecipes(page),
   });
 
-  const handleRecipeClick = (_id: string) => {
+  const handleRecipeClick = (_: string) => {
     // TODO: navigate to recipe detail
   };
 

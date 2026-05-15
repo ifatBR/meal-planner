@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   useQuery,
   useMutation,
@@ -67,23 +67,24 @@ export function IngredientsTab() {
     placeholderData: keepPreviousData,
   });
 
-  const ingredients = data?.items ?? [];
+  const ingredients = useMemo(() => data?.items ?? [], [data]);
   const meta = data?.meta;
 
-  // Auto-expand items whose variants match the search query
-  useEffect(() => {
-    if (!search || !ingredients.length) return;
-    const matched = ingredients
+  const searchExpandedIds = useMemo(() => {
+    if (!search || !ingredients.length) return [];
+    return ingredients
       .filter((ing) =>
         ing.ingredient_variants.some((v) =>
           v.variant.toLowerCase().includes(search.toLowerCase()),
         ),
       )
       .map((ing) => ing.id);
-    if (matched.length > 0) {
-      setExpandedItems((prev) => Array.from(new Set([...prev, ...matched])));
-    }
   }, [search, ingredients]);
+
+  const effectiveExpandedItems = useMemo(
+    () => Array.from(new Set([...expandedItems, ...searchExpandedIds])),
+    [expandedItems, searchExpandedIds],
+  );
 
   // ── Mutations ─────────────────────────────────────────────────────────────
 
@@ -359,7 +360,7 @@ export function IngredientsTab() {
 
       <AccordionList
         ingredients={ingredients}
-        expandedItems={expandedItems}
+        expandedItems={effectiveExpandedItems}
         setExpandedItems={setExpandedItems}
         addingVariantFor={addingVariantFor}
         setHoveredIngredient={setHoveredIngredient}

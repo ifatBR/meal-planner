@@ -116,7 +116,7 @@ export const fetchMealTypes = async (): Promise<MealTypeResponse[]> => {
 };
 
 export const deleteMealType = async (id: string): Promise<void> => {
-  const res = await apiFetch(`${MEAL_TYPES_URL}/${id}`, { method: 'DELETE' });
+  const res = await apiFetch(`${MEAL_TYPES_URL}/${id}`, { method: "DELETE" });
   if (!res.ok) throw await res.json();
 };
 ```
@@ -168,6 +168,7 @@ All protected routes are nested under a single parent layout route:
 ### ROUTES constant
 
 Two forms per route:
+
 - `ROUTES.SCHEDULE_SETTINGS(id)` — for navigation (function)
 - `ROUTES.SCHEDULE_SETTINGS_PATTERN` — for route definitions (string pattern)
 
@@ -189,16 +190,18 @@ On app load, attempt to refresh the token silently via `POST /auth/refresh`. If 
 
 ### Rule: match the error type to the context
 
-| Situation | Error type | Example |
-|-----------|-----------|---------|
-| Field-level validation (unique name, required field, invalid format) | Inline error under the field | "A recipe with this name already exists" |
-| Action failed (save, delete, generate) | Toast — error variant | "Failed to save recipe. Try again." |
-| Whole section failed to load | Inline error in the section with a retry button | "Failed to load recipes." |
-| Unexpected rendering crash | Error boundary fallback | "Something went wrong. Reload the page." |
-| 409 conflict with structured data (e.g. recipe in use) | Inline error with context | "This recipe is used in: Schedule A, Schedule B" |
+| Situation                                                            | Error type                                      | Example                                          |
+| -------------------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------ |
+| Field-level validation (unique name, required field, invalid format) | Inline error under the field                    | "A recipe with this name already exists"         |
+| Action failed (save, delete, generate)                               | Toast — error variant                           | "Failed to save recipe. Try again."              |
+| Whole section failed to load                                         | Inline error in the section with a retry button | "Failed to load recipes."                        |
+| Unexpected rendering crash                                           | Error boundary fallback                         | "Something went wrong. Reload the page."         |
+| 409 conflict with structured data (e.g. recipe in use)               | Inline error with context                       | "This recipe is used in: Schedule A, Schedule B" |
 
 ### Never use a toast for field validation errors.
+
 ### Never use an inline field error for action failures.
+
 ### Error boundaries are for rendering crashes only — not API errors.
 
 ### Error boundary setup
@@ -222,6 +225,7 @@ On app load, attempt to refresh the token silently via `POST /auth/refresh`. If 
 ## Onboarding
 
 On app load after authentication, fire 5 parallel React Query calls:
+
 - meal types list
 - dish types list
 - layouts list
@@ -283,18 +287,26 @@ Meal types have a `color` field stored in the DB. The frontend assigns a color f
 
 ```typescript
 // utils/constants.ts — references designTokens, no hardcoded values
-import { COLORS } from '../styles/designTokens';
+import { COLORS } from "../styles/designTokens";
 
 export const MEAL_TYPE_COLORS = [
-  COLORS.palette[1], COLORS.palette[2], COLORS.palette[3], COLORS.palette[4],
-  COLORS.palette[5], COLORS.palette[6], COLORS.palette[7], COLORS.palette[8],
+  COLORS.palette[1],
+  COLORS.palette[2],
+  COLORS.palette[3],
+  COLORS.palette[4],
+  COLORS.palette[5],
+  COLORS.palette[6],
+  COLORS.palette[7],
+  COLORS.palette[8],
 ] as const;
 
 // Assign color on meal type creation:
-const color = MEAL_TYPE_COLORS[existingMealTypes.length % MEAL_TYPE_COLORS.length];
+const color =
+  MEAL_TYPE_COLORS[existingMealTypes.length % MEAL_TYPE_COLORS.length];
 ```
 
 ### Rules
+
 - **`designTokens.ts` is the only file that may contain raw hex values or pixel values.**
 - Never hardcode color, spacing, font, radius, or shadow values in components or any other file.
 - No local style overrides — if a one-off style is needed, add a token to `designTokens.ts` instead.
@@ -306,12 +318,14 @@ const color = MEAL_TYPE_COLORS[existingMealTypes.length % MEAL_TYPE_COLORS.lengt
 ## Testing
 
 ### Stack
+
 - **Vitest** — test runner
 - **React Testing Library** — component and hook testing
 - **jsdom** — browser environment simulation
 - **@testing-library/user-event** — user interaction simulation
 
 ### Rules
+
 - Every new component, hook, and utility function gets a test file next to it.
 - Use `@testing-library/user-event` for all interactions — never `fireEvent`.
 - Mock all API calls in component and hook tests — never hit the real API.
@@ -320,7 +334,9 @@ const color = MEAL_TYPE_COLORS[existingMealTypes.length % MEAL_TYPE_COLORS.lengt
 - If removing a piece of logic would not break any test, the test is not good enough.
 
 ### File naming
+
 Test files live next to the file they test:
+
 ```
 src/utils/date.ts           → src/utils/date.test.ts
 src/hooks/useAuth.ts        → src/hooks/useAuth.test.ts
@@ -335,20 +351,24 @@ src/pages/library/tabs/IngredientTabComponents/Foo.tsx → src/pages/library/tab
 ## Component Conventions
 
 ### Golden rule
+
 Never use raw Chakra primitives or HTML elements directly in pages. Always use the semantic components from `src/components/`.
 
 ### Typography
+
 Always use components from `src/components/Typography.tsx`:
 
-| Component | Use case | Never use instead |
-|-----------|----------|-------------------|
-| `<PageTitle>` | Top of each page | `<h1>`, `<Heading>`, `<Text>` |
-| `<SectionTitle>` | Card headers, tab section headers | `<h2>`, `<Heading>` |
-| `<BodyText>` | Default paragraph text | `<p>`, `<Text>` |
-| `<Caption>` | Helper text, labels, metadata | `<small>`, `<Text>` |
+| Component        | Use case                          | Never use instead             |
+| ---------------- | --------------------------------- | ----------------------------- |
+| `<PageTitle>`    | Top of each page                  | `<h1>`, `<Heading>`, `<Text>` |
+| `<SectionTitle>` | Card headers, tab section headers | `<h2>`, `<Heading>`           |
+| `<BodyText>`     | Default paragraph text            | `<p>`, `<Text>`               |
+| `<Caption>`      | Helper text, labels, metadata     | `<small>`, `<Text>`           |
 
 ### Buttons
+
 Always use `<Button>` from `src/components/Button.tsx` with explicit variant:
+
 - `variant="primary"` — main actions (Save, Generate, Create)
 - `variant="secondary"` — secondary actions (Cancel, Back)
 - `variant="danger"` — destructive actions (Delete)
@@ -357,33 +377,42 @@ Always use `<Button>` from `src/components/Button.tsx` with explicit variant:
 Never use Chakra's `<Button>` directly in pages.
 
 ### Nav items
+
 Always use `<NavItem>` from `src/components/NavItem.tsx` for sidebar and nav items. Never build inline nav rows with custom hover/active logic.
 
 ### Form fields
+
 Always use `<FormField>` from `src/components/FormField.tsx` to wrap inputs. Never use `<Input>` alone in a form.
 
 ### Inline editing
+
 Use `<InlineEditInput>` from `src/components/InlineEditInput.tsx`. It dismisses on Enter, Escape, and blur.
 
 ### Editable list items
+
 Use `<EditableListItem>` from `src/components/EditableListItem.tsx` for all name-editable, delete-able list rows. It handles inline edit mode, hover-reveal delete, blocked state, and inline errors internally.
 
 ### Confirm dialog
+
 Use `<ConfirmDialog>` from `src/components/ConfirmDialog.tsx` for all delete confirmations. Never fire a DELETE request without user confirmation.
 
 ### Pagination
+
 Use `<Pagination>` from `src/components/Pagination.tsx` for all paginated lists.
 Props: `page`, `totalPages`, `onPageChange`.
 Never build inline prev/next pagination in page components.
 
 ### Loading error
+
 Use `<LoadingError>` from `src/components/LoadingError.tsx` for all "section failed to load" states.
 Props: `message`, `onRetry`.
 Never build inline error+retry UI in page components.
 
 ### Empty state
+
 Use `<EmptyState>` from `src/components/EmptyState.tsx` for all empty list states in library tabs.
 Props: `title`, `description`, `action?: { label, onClick }`.
+
 - Every tab must show an `EmptyState` when its list is empty and no add-flow is active.
 - `title` should name the missing item type (e.g. "No meal types yet.").
 - `description` should explain what the item is and why the user should add one — make it specific to the item type, not generic.
@@ -391,17 +420,21 @@ Props: `title`, `description`, `action?: { label, onClick }`.
 - Never build an inline empty state in a tab — always use `<EmptyState>`.
 
 ### Highlighted text
+
 Use `<HighlightedText>` from `src/components/HighlightedText.tsx` when rendering text that may contain a search match.
 Props: `text`, `highlight`.
 Uses `COLORS.highlight.default` as background on the matched substring.
 
 ### Tooltips
+
 Use Chakra UI Tooltip from `src/components/ui/tooltip` (CLI snippet). Never build custom tooltip components.
 
 ### Future components
+
 As new shared components are added (Card, Badge, Modal, BottomSheet, EmptyState, Banner, Spinner), the same rule applies — pages import from `src/components/`, never from Chakra directly.
 
 ### Internal implementation rules
+
 - All components must use Chakra primitives internally — `Box`, `Text`, `Heading`, `Flex`, `Stack`, etc.
 - Never use raw HTML tags (`<div>`, `<h1>`, `<p>`, `<span>`, `<label>`) inside components.
 - Never use the `style` attribute or inline style objects — use Chakra style props instead.
@@ -413,6 +446,7 @@ As new shared components are added (Card, Badge, Modal, BottomSheet, EmptyState,
 
 - Plain functions only — no classes.
 - If a UI element needs a handler that hasn't been implemented yet, still define it as a named function with a `// TODO` comment inside, and reference it by name on the component. Never leave the prop unwired and never use an inline arrow. Example:
+
   ```tsx
   const handleRecipeClick = (id: string) => {
     // TODO: navigate to recipe detail
@@ -420,7 +454,9 @@ As new shared components are added (Card, Badge, Modal, BottomSheet, EmptyState,
 
   <ClickableListItem onClick={() => handleRecipeClick(recipe.id)} ... />
   ```
+
   This keeps the interface complete and makes gaps easy to find and fill in.
+
 - No inline Zod schemas — import from `@app/types`.
 - No hardcoded strings for routes — use `ROUTES` constants from `src/utils/constants.ts`.
 - Search inputs are debounced 300ms — never fire on every keystroke.
