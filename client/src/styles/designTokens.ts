@@ -183,7 +183,12 @@ export const MAX_WIDTHS = {
   listItem: "600px",
 } as const;
 
+export const MIN_HEIGHTS = {
+  paginatedList: "400px",
+} as const;
+
 export const Z_INDEX = {
+  dropdown: 50,
   sidebar: 100,
   modal: 200,
   toast: 9999,

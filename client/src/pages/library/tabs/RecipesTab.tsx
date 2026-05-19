@@ -1,18 +1,25 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Flex, Spinner } from "@chakra-ui/react";
+import { Box, Flex, Spinner } from "@chakra-ui/react";
 import { fetchRecipes, deleteRecipe } from "@/api/recipes";
+import { ROUTES } from "@/utils/constants";
 import { ClickableListItem } from "@/components/ClickableListItem";
 import { EmptyState } from "@/components/EmptyState";
 import { useToast } from "@/hooks/useToast";
 import { LoadingError } from "@/components/LoadingError";
 import { Pagination } from "@/components/Pagination";
-import { SPACING } from "@/styles/designTokens";
+import { SIDEBAR, SPACING } from "@/styles/designTokens";
 
-export function RecipesTab() {
+interface RecipesTabProps {
+  initialPage?: number;
+}
+
+export function RecipesTab({ initialPage = 1 }: RecipesTabProps) {
   const queryClient = useQueryClient();
   const toast = useToast();
-  const [page, setPage] = useState(1);
+  const navigate = useNavigate();
+  const [page, setPage] = useState(initialPage);
   const [deleteErrors, setDeleteErrors] = useState<Record<string, string>>({});
 
   const { data, isLoading, isError, refetch } = useQuery({
@@ -20,8 +27,8 @@ export function RecipesTab() {
     queryFn: () => fetchRecipes(page),
   });
 
-  const handleRecipeClick = (_: string) => {
-    // TODO: navigate to recipe detail
+  const handleRecipeClick = (id: string) => {
+    navigate(ROUTES.RECIPE_DETAIL(id), { state: { fromPage: page } });
   };
 
   const handleAddRecipe = () => {
@@ -84,17 +91,25 @@ export function RecipesTab() {
 
   // ── List ─────────────────────────────────────────────────────────────────
   return (
-    <Flex direction="column" gap={SPACING[1]} pt={SPACING[4]}>
-      {data.items.map((recipe) => (
-        <ClickableListItem
-          key={recipe.id}
-          name={recipe.name}
-          onClick={() => handleRecipeClick(recipe.id)}
-          onDelete={() => deleteMutation.mutate(recipe.id)}
-          inlineError={deleteErrors[recipe.id]}
-        />
-      ))}
-      <Pagination meta={data.meta} setPage={setPage} />
-    </Flex>
+    <Box pt={SPACING[4]} pb={SPACING[12]}>
+      <Flex direction="column" gap={SPACING[1]}>
+        {data.items.map((recipe) => (
+          <ClickableListItem
+            key={recipe.id}
+            name={recipe.name}
+            onClick={() => handleRecipeClick(recipe.id)}
+            onDelete={() => deleteMutation.mutate(recipe.id)}
+            inlineError={deleteErrors[recipe.id]}
+          />
+        ))}
+      </Flex>
+      <Box
+        position="fixed"
+        bottom={SPACING[5]}
+        left={`calc(${SIDEBAR.widthExpanded} + ${SPACING[6]})`}
+      >
+        <Pagination meta={data.meta} setPage={setPage} />
+      </Box>
+    </Box>
   );
 }

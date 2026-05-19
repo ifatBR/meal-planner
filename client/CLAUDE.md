@@ -437,7 +437,7 @@ As new shared components are added (Card, Badge, Modal, BottomSheet, EmptyState,
 
 - All components must use Chakra primitives internally — `Box`, `Text`, `Heading`, `Flex`, `Stack`, etc.
 - Never use raw HTML tags (`<div>`, `<h1>`, `<p>`, `<span>`, `<label>`) inside components.
-- Never use the `style` attribute or inline style objects — use Chakra style props instead.
+- Never use the `style` attribute or inline style objects — use Chakra style props instead. For Chakra components specifically, always apply styles as props directly on the component (e.g. `color=`, `p=`, `display=`) as documented by Chakra UI — this ensures Chakra's internal CSS cascade works correctly. Only use `style={{}}` as a last resort for cases that genuinely cannot be expressed as Chakra props.
 - Import all design values from `src/styles/designTokens.ts` — no hardcoded values in components.
 
 ---
@@ -457,6 +457,7 @@ As new shared components are added (Card, Badge, Modal, BottomSheet, EmptyState,
 
   This keeps the interface complete and makes gaps easy to find and fill in.
 
+- Always display user-entered names (ingredients, recipes, meal types, dish types, etc.) through `capitalizeFirst` from `src/utils/text.ts`. Never render a raw name string directly without it.
 - No inline Zod schemas — import from `@app/types`.
 - No hardcoded strings for routes — use `ROUTES` constants from `src/utils/constants.ts`.
 - Search inputs are debounced 300ms — never fire on every keystroke.

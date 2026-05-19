@@ -56,7 +56,11 @@ export function NavItem({
 
   if (to) {
     return (
-      <Tooltip content={label} positioning={{ placement: "right" }} disabled={!isCollapsed}>
+      <Tooltip
+        content={label}
+        positioning={{ placement: "right" }}
+        disabled={!isCollapsed}
+      >
         <Link to={to}>
           <Flex {...sharedFlexProps}>{content}</Flex>
         </Link>
@@ -65,7 +69,11 @@ export function NavItem({
   }
 
   return (
-    <Tooltip content={label} positioning={{ placement: "right" }} disabled={!isCollapsed}>
+    <Tooltip
+      content={label}
+      positioning={{ placement: "right" }}
+      disabled={!isCollapsed}
+    >
       <Flex
         as="button"
         onClick={onClick}

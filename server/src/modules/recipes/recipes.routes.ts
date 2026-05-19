@@ -39,7 +39,7 @@ type RecipeRow = {
 };
 
 const mapIngredient = (ri: RIRow) => ({
-  id: ri.id,
+  id: ri.ingredient.id,
   displayName: ri.display_name ?? ri.ingredient.name,
   isMain: ri.is_main,
   ...(ri.amount != null && ri.unit != null && {

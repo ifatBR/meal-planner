@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Box, Flex, Tabs } from '@chakra-ui/react';
 import { PageTitle } from '@/components/Typography';
 import { MealTypesTab } from './tabs/MealTypesTab';
@@ -14,16 +15,18 @@ import {
   SPACING,
 } from '@/styles/designTokens';
 
-const TABS = [
-  { label: 'Meal Types', content: <MealTypesTab /> },
-  { label: 'Dish Types', content: <DishTypesTab /> },
-  { label: 'Ingredients', content: <IngredientsTab /> },
-  { label: 'Recipes', content: <RecipesTab /> },
-  { label: 'Layouts', content: <LayoutsTab /> },
-] as const;
-
 export function LibraryPage() {
-  const [activeTab, setActiveTab] = useState(0);
+  const location = useLocation();
+  const navState = location.state as { activeTab?: number; recipesPage?: number } | null;
+  const [activeTab, setActiveTab] = useState(navState?.activeTab ?? 0);
+
+  const TABS = [
+    { label: 'Meal Types', content: <MealTypesTab /> },
+    { label: 'Dish Types', content: <DishTypesTab /> },
+    { label: 'Ingredients', content: <IngredientsTab /> },
+    { label: 'Recipes', content: <RecipesTab initialPage={navState?.recipesPage} /> },
+    { label: 'Layouts', content: <LayoutsTab /> },
+  ];
 
   return (
     <Flex direction="column" gap={SPACING[6]}>

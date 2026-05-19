@@ -5,6 +5,7 @@ import { AppLayout } from "../components/AppLayout";
 import { useAuth } from "../context/AuthContext";
 import { LoginPage } from "../pages/login/LoginPage";
 import { LibraryPage } from "../pages/library/LibraryPage";
+import { RecipePage } from "../pages/recipes/RecipePage";
 
 const Placeholder = ({ name }: { name: string }) => (
   <div style={{ padding: "2rem", fontFamily: "sans-serif" }}>{name}</div>
@@ -29,6 +30,7 @@ export const routeConfig = [
     children: [
       { index: true, element: <Navigate to={ROUTES.SCHEDULES} replace /> },
       { path: ROUTES.LIBRARY, element: <LibraryPage /> },
+      { path: ROUTES.RECIPE_DETAIL_PATTERN, element: <RecipePage /> },
       { path: ROUTES.SCHEDULES, element: <Placeholder name="Schedules" /> },
       {
         path: ROUTES.SCHEDULE_SETTINGS_PATTERN,

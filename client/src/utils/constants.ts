@@ -6,9 +6,11 @@ export const ROUTES = {
   SCHEDULES: "/schedules",
   SCHEDULE_SETTINGS: (id: string) => `/schedules/${id}/settings`,
   SCHEDULE_CALENDAR: (id: string) => `/schedules/${id}/calendar`,
+  RECIPE_DETAIL: (id: string) => `/recipes/${id}`,
   // For route definitions
   SCHEDULE_SETTINGS_PATTERN: "/schedules/:id/settings",
   SCHEDULE_CALENDAR_PATTERN: "/schedules/:id/calendar",
+  RECIPE_DETAIL_PATTERN: "/recipes/:id",
 } as const;
 
 export const MEAL_TYPE_COLORS = [
