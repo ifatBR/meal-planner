@@ -5,7 +5,14 @@ import { Button } from "@/components/Button";
 import { BodyText } from "@/components/Typography";
 import { InlineEditInput } from "@/components/InlineEditInput";
 import { Tooltip } from "@/components/ui/tooltip";
-import { COLORS, ICON_SIZES, MAX_WIDTHS, RADII, SPACING } from "@/styles/designTokens";
+import {
+  COLORS,
+  ICON_SIZES,
+  MAX_WIDTHS,
+  RADII,
+  SPACING,
+} from "@/styles/designTokens";
+import { CircleFull } from "./CircleFull";
 
 interface EditableListItemProps {
   name: string;
@@ -59,15 +66,7 @@ export function EditableListItem({
         transition="background-color 0.15s ease"
         _hover={hoverColors || { bg: COLORS.highlight.secondary }}
       >
-        {color && (
-          <Box
-            w="10px"
-            h="10px"
-            borderRadius={RADII.full}
-            bg={color}
-            flexShrink={0}
-          />
-        )}
+        {color && <CircleFull color={color} />}
 
         <Box flex={1}>
           {editing ? (

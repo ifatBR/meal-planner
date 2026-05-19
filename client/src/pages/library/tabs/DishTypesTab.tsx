@@ -13,7 +13,8 @@ import { EditableListItem } from "@/components/EditableListItem";
 import { InlineEditInput } from "@/components/InlineEditInput";
 import { EmptyState } from "@/components/EmptyState";
 import { useToast } from "@/hooks/useToast";
-import { COLORS, SPACING } from "@/styles/designTokens";
+import { SectionTitle } from "@/components/Typography";
+import { COLORS, MAX_WIDTHS, SPACING } from "@/styles/designTokens";
 import { LoadingError } from "@/components/LoadingError";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 
@@ -22,7 +23,10 @@ export function DishTypesTab() {
   const toast = useToast();
   const [addingNew, setAddingNew] = useState(false);
   const [deleteErrors, setDeleteErrors] = useState<Record<string, string>>({});
-  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   const {
     data: dishTypes,
@@ -129,14 +133,44 @@ export function DishTypesTab() {
       <EmptyState
         title="No dish types yet."
         description="Dish types categorise what kind of food a recipe is — for example Salad, Soup, Main Course, or Dessert. They help organise your recipes and are used when building layouts."
-        action={{ label: "Add your first dish type", onClick: () => setAddingNew(true) }}
+        action={{
+          label: "Add your first dish type",
+          onClick: () => setAddingNew(true),
+        }}
       />
     );
   }
 
   // ── List ─────────────────────────────────────────────────────────────────
   return (
-    <Flex direction="column" gap={SPACING[1]} pt={SPACING[4]}>
+    <Flex
+      direction="column"
+      gap={SPACING[1]}
+      pt={SPACING[4]}
+      maxW={MAX_WIDTHS.listItem}
+    >
+      <Box mb={SPACING[3]}>
+        <SectionTitle>Dish types</SectionTitle>
+      </Box>
+      {addingNew ? (
+        <Flex align="center" gap={SPACING[3]} px={SPACING[3]} py={SPACING[2]}>
+          <Box flex={1}>
+            <InlineEditInput
+              value=""
+              placeholder="New Dish-type name"
+              onSave={handleCreate}
+              onCancel={() => setAddingNew(false)}
+            />
+          </Box>
+        </Flex>
+      ) : (
+        <Box pt={SPACING[2]} px={SPACING[3]}>
+          <Button variant="ghost" size="sm" onClick={() => setAddingNew(true)}>
+            + Add dish type
+          </Button>
+        </Box>
+      )}
+
       {dishTypes?.map((dt) => (
         <EditableListItem
           key={dt.id}
@@ -148,32 +182,14 @@ export function DishTypesTab() {
         />
       ))}
 
-      {addingNew && (
-        <Flex align="center" gap={SPACING[3]} px={SPACING[3]} py={SPACING[2]}>
-          <Box flex={1}>
-            <InlineEditInput
-              value=""
-              onSave={handleCreate}
-              onCancel={() => setAddingNew(false)}
-            />
-          </Box>
-        </Flex>
-      )}
-
-      {!addingNew && (
-        <Box pt={SPACING[2]} px={SPACING[3]}>
-          <Button variant="ghost" size="sm" onClick={() => setAddingNew(true)}>
-            + Add dish type
-          </Button>
-        </Box>
-      )}
-
       <ConfirmDialog
         open={pendingDelete !== null}
         title={`Delete "${pendingDelete?.name}"?`}
         description="This action cannot be undone."
         onClose={() => setPendingDelete(null)}
-        onConfirm={() => pendingDelete && deleteMutation.mutate(pendingDelete.id)}
+        onConfirm={() =>
+          pendingDelete && deleteMutation.mutate(pendingDelete.id)
+        }
         isLoading={deleteMutation.isPending}
       />
     </Flex>

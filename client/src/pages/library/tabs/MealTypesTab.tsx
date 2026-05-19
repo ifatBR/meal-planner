@@ -14,7 +14,8 @@ import { InlineEditInput } from "@/components/InlineEditInput";
 import { EmptyState } from "@/components/EmptyState";
 import { useToast } from "@/hooks/useToast";
 import { MEAL_TYPE_COLORS } from "@/utils/constants";
-import { RADII, SPACING } from "@/styles/designTokens";
+import { SectionTitle } from "@/components/Typography";
+import { MAX_WIDTHS, RADII, SPACING } from "@/styles/designTokens";
 import { LoadingError } from "@/components/LoadingError";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 
@@ -23,7 +24,10 @@ export function MealTypesTab() {
   const toast = useToast();
   const [addingNew, setAddingNew] = useState(false);
   const [deleteErrors, setDeleteErrors] = useState<Record<string, string>>({});
-  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   const {
     data: mealTypes,
@@ -131,25 +135,25 @@ export function MealTypesTab() {
       <EmptyState
         title="No meal types yet."
         description="Meal types define when meals are served — for example Breakfast, Lunch, and Dinner. They are used when building layouts and generating schedules."
-        action={{ label: "Add your first meal type", onClick: () => setAddingNew(true) }}
+        action={{
+          label: "Add your first meal type",
+          onClick: () => setAddingNew(true),
+        }}
       />
     );
   }
 
   // ── List ─────────────────────────────────────────────────────────────────
   return (
-    <Flex direction="column" gap={SPACING[1]} pt={SPACING[4]}>
-      {mealTypes?.map((mt) => (
-        <EditableListItem
-          key={mt.id}
-          name={mt.name}
-          color={mt.color}
-          onSave={(name) => handleSave(mt.id, name)}
-          onDelete={() => setPendingDelete({ id: mt.id, name: mt.name })}
-          inlineError={deleteErrors[mt.id]}
-        />
-      ))}
-
+    <Flex
+      direction="column"
+      gap={SPACING[1]}
+      pt={SPACING[4]}
+      maxW={MAX_WIDTHS.listItem}
+    >
+      <Box mb={SPACING[3]}>
+        <SectionTitle>Meal types</SectionTitle>
+      </Box>
       {addingNew && (
         <Flex align="center" gap={SPACING[3]} px={SPACING[3]} py={SPACING[2]}>
           <Box
@@ -181,12 +185,25 @@ export function MealTypesTab() {
         </Box>
       )}
 
+      {mealTypes?.map((mt) => (
+        <EditableListItem
+          key={mt.id}
+          name={mt.name}
+          color={mt.color}
+          onSave={(name) => handleSave(mt.id, name)}
+          onDelete={() => setPendingDelete({ id: mt.id, name: mt.name })}
+          inlineError={deleteErrors[mt.id]}
+        />
+      ))}
+
       <ConfirmDialog
         open={pendingDelete !== null}
         title={`Delete "${pendingDelete?.name}"?`}
         description="This action cannot be undone."
         onClose={() => setPendingDelete(null)}
-        onConfirm={() => pendingDelete && deleteMutation.mutate(pendingDelete.id)}
+        onConfirm={() =>
+          pendingDelete && deleteMutation.mutate(pendingDelete.id)
+        }
         isLoading={deleteMutation.isPending}
       />
     </Flex>

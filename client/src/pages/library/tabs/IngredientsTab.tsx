@@ -19,7 +19,7 @@ import {
 import { Button } from "@/components/Button";
 import { InlineEditInput } from "@/components/InlineEditInput";
 import { SearchInput } from "@/components/SearchInput";
-import { BodyText } from "@/components/Typography";
+import { BodyText, SectionTitle } from "@/components/Typography";
 import { EmptyState } from "@/components/EmptyState";
 import { useToast } from "@/hooks/useToast";
 import { MAX_WIDTHS, SPACING } from "@/styles/designTokens";
@@ -56,7 +56,9 @@ export function IngredientsTab() {
   const [variantDeleteErrors, setVariantDeleteErrors] = useState<
     Record<string, string>
   >({});
-  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(
+    null,
+  );
 
   // Debounce search input
   useEffect(() => {
@@ -328,7 +330,10 @@ export function IngredientsTab() {
       <EmptyState
         title="No ingredients yet."
         description="Ingredients are the building blocks of your recipes. Add them here and use them when creating recipes."
-        action={{ label: "Add your first ingredient", onClick: () => setAddingIngredient(true) }}
+        action={{
+          label: "Add your first ingredient",
+          onClick: () => setAddingIngredient(true),
+        }}
       />
     );
   }
@@ -337,6 +342,10 @@ export function IngredientsTab() {
 
   return (
     <Box maxW={MAX_WIDTHS.listItem} pt={SPACING[4]}>
+      <Box mb={SPACING[3]}>
+        <SectionTitle>Ingredients</SectionTitle>
+      </Box>
+
       {/* Search */}
       <SearchInput
         placeholder="Search ingredients…"
@@ -349,6 +358,7 @@ export function IngredientsTab() {
         <Box pt={SPACING[4]}>
           <InlineEditInput
             value=""
+            placeholder="New ingredient name"
             onSave={(name) => createIngredientMutation.mutate(name)}
             onCancel={() => {
               setAddingIngredient(false);

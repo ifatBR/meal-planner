@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Flex, Spinner } from "@chakra-ui/react";
+import { Box, Flex, Spinner } from "@chakra-ui/react";
 import { fetchLayouts, deleteLayout } from "@/api/layouts";
 import { ActionListItem } from "@/components/ActionListItem";
 import { EmptyState } from "@/components/EmptyState";
 import { useToast } from "@/hooks/useToast";
 import { LoadingError } from "@/components/LoadingError";
+import { SectionTitle } from "@/components/Typography";
 import { SPACING } from "@/styles/designTokens";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 
@@ -96,6 +97,9 @@ export function LayoutsTab() {
   // ── List ─────────────────────────────────────────────────────────────────
   return (
     <Flex direction="column" gap={SPACING[1]} pt={SPACING[4]}>
+      <Box mb={SPACING[3]}>
+        <SectionTitle>Layouts</SectionTitle>
+      </Box>
       {layouts.map((layout) => (
         <ActionListItem
           key={layout.id}

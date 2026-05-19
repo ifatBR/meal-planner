@@ -187,6 +187,12 @@ export const MIN_HEIGHTS = {
   paginatedList: "400px",
 } as const;
 
+export const MODAL = {
+  width: "90vw",
+  maxWidth: "600px",
+  height: "80vh",
+} as const;
+
 export const Z_INDEX = {
   dropdown: 50,
   sidebar: 100,

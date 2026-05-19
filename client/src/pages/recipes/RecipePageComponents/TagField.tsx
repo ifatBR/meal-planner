@@ -18,6 +18,7 @@ import {
   SPACING,
   Z_INDEX,
 } from "@/styles/designTokens";
+import { CircleFull } from "@/components/CircleFull";
 
 export interface TagItem {
   id: string;
@@ -92,13 +93,7 @@ export function TagField({
                 alignItems="center"
                 justifyContent="center"
               >
-                <Box
-                  w="8px"
-                  h="8px"
-                  borderRadius={RADII.full}
-                  bg={item.color}
-                  flexShrink={0}
-                />
+                <CircleFull color={item.color} />
               </TagStartElement>
             )}
             <TagLabel

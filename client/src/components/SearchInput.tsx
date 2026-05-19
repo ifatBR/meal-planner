@@ -1,7 +1,13 @@
 import { X, Search } from "lucide-react";
 import { Box, Flex } from "@chakra-ui/react";
 import { Input } from "@/components/Input";
-import { COLORS, ICON_SIZES, RADII, SPACING } from "@/styles/designTokens";
+import {
+  COLORS,
+  ICON_SIZES,
+  MAX_WIDTHS,
+  RADII,
+  SPACING,
+} from "@/styles/designTokens";
 
 interface SearchInputProps {
   value: string;
@@ -15,7 +21,7 @@ export function SearchInput({
   placeholder = "Search…",
 }: SearchInputProps) {
   return (
-    <Box position="relative">
+    <Box position="relative" w={MAX_WIDTHS.listItem}>
       <Box
         position="absolute"
         left={SPACING[3]}

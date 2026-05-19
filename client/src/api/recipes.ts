@@ -9,8 +9,9 @@ export type RecipesPage = {
   meta: { page: number; pageSize: number; total: number; totalPages: number };
 };
 
-export const fetchRecipes = async (page = 1): Promise<RecipesPage> => {
+export const fetchRecipes = async (page = 1, search?: string): Promise<RecipesPage> => {
   const params = new URLSearchParams({ page: String(page), pageSize: '10' });
+  if (search) params.set('search', search);
   const res = await apiFetch(`${RECIPES_URL}?${params}`);
   if (!res.ok) throw await res.json();
   const { data } = await res.json();

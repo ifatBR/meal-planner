@@ -1,6 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  keepPreviousData,
+} from "@tanstack/react-query";
 import { Box, Flex, Spinner } from "@chakra-ui/react";
 import { fetchRecipes, deleteRecipe } from "@/api/recipes";
 import { ROUTES } from "@/utils/constants";
@@ -9,8 +14,12 @@ import { EmptyState } from "@/components/EmptyState";
 import { useToast } from "@/hooks/useToast";
 import { LoadingError } from "@/components/LoadingError";
 import { Pagination } from "@/components/Pagination";
+import { SearchInput } from "@/components/SearchInput";
+import { Button } from "@/components/Button";
+import { BodyText, SectionTitle } from "@/components/Typography";
 import { SIDEBAR, SPACING } from "@/styles/designTokens";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { RecipeViewModal } from "./RecipesTabComponents/RecipeViewModal";
 
 interface RecipesTabProps {
   initialPage?: number;
@@ -21,16 +30,31 @@ export function RecipesTab({ initialPage = 1 }: RecipesTabProps) {
   const toast = useToast();
   const navigate = useNavigate();
   const [page, setPage] = useState(initialPage);
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
   const [deleteErrors, setDeleteErrors] = useState<Record<string, string>>({});
-  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [viewRecipeId, setViewRecipeId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["recipes", page],
-    queryFn: () => fetchRecipes(page),
+    queryKey: ["recipes", page, search],
+    queryFn: () => fetchRecipes(page, search || undefined),
+    placeholderData: keepPreviousData,
   });
 
-  const handleRecipeView = (_id: string) => {
-    // TODO: open recipe read-only view
+  const handleRecipeView = (id: string) => {
+    setViewRecipeId(id);
   };
 
   const handleRecipeEdit = (id: string) => {
@@ -87,7 +111,7 @@ export function RecipesTab({ initialPage = 1 }: RecipesTabProps) {
   }
 
   // ── Empty state ──────────────────────────────────────────────────────────
-  if (!data?.items.length) {
+  if (!data?.items.length && !search) {
     return (
       <EmptyState
         title="No recipes yet."
@@ -100,24 +124,53 @@ export function RecipesTab({ initialPage = 1 }: RecipesTabProps) {
   // ── List ─────────────────────────────────────────────────────────────────
   return (
     <Box pt={SPACING[4]} pb={SPACING[12]}>
-      <Flex direction="column" gap={SPACING[1]}>
-        {data.items.map((recipe) => (
-          <ActionListItem
-            key={recipe.id}
-            name={recipe.name}
-            onView={() => handleRecipeView(recipe.id)}
-            onEdit={() => handleRecipeEdit(recipe.id)}
-            onDelete={() => setPendingDelete({ id: recipe.id, name: recipe.name })}
-            inlineError={deleteErrors[recipe.id]}
-          />
-        ))}
+      <Flex
+        justify="space-between"
+        align="center"
+        gap={SPACING[3]}
+        mb={SPACING[4]}
+      >
+        <SectionTitle>Recipes</SectionTitle>
+        <Button variant="primary" size="sm" onClick={handleAddRecipe}>
+          + Create recipe
+        </Button>
       </Flex>
+
+      <Box mb={SPACING[4]}>
+        <SearchInput
+          placeholder="Search recipes…"
+          value={searchInput}
+          onChange={setSearchInput}
+        />
+      </Box>
+
+      {search && !data?.items.length ? (
+        <Box pt={SPACING[2]}>
+          <BodyText secondary>No recipes match "{search}".</BodyText>
+        </Box>
+      ) : (
+        <Flex direction="column" gap={SPACING[1]}>
+          {data?.items.map((recipe) => (
+            <ActionListItem
+              key={recipe.id}
+              name={recipe.name}
+              onView={() => handleRecipeView(recipe.id)}
+              onEdit={() => handleRecipeEdit(recipe.id)}
+              onDelete={() =>
+                setPendingDelete({ id: recipe.id, name: recipe.name })
+              }
+              inlineError={deleteErrors[recipe.id]}
+            />
+          ))}
+        </Flex>
+      )}
+
       <Box
         position="fixed"
         bottom={SPACING[5]}
         left={`calc(${SIDEBAR.widthExpanded} + ${SPACING[6]})`}
       >
-        <Pagination meta={data.meta} setPage={setPage} />
+        {data?.meta && <Pagination meta={data.meta} setPage={setPage} />}
       </Box>
 
       <ConfirmDialog
@@ -125,8 +178,19 @@ export function RecipesTab({ initialPage = 1 }: RecipesTabProps) {
         title={`Delete "${pendingDelete?.name}"?`}
         description="This action cannot be undone."
         onClose={() => setPendingDelete(null)}
-        onConfirm={() => pendingDelete && deleteMutation.mutate(pendingDelete.id)}
+        onConfirm={() =>
+          pendingDelete && deleteMutation.mutate(pendingDelete.id)
+        }
         isLoading={deleteMutation.isPending}
+      />
+
+      <RecipeViewModal
+        recipeId={viewRecipeId}
+        onClose={() => setViewRecipeId(null)}
+        onEdit={(id) => {
+          setViewRecipeId(null);
+          navigate(ROUTES.RECIPE_DETAIL(id), { state: { fromPage: page } });
+        }}
       />
     </Box>
   );
