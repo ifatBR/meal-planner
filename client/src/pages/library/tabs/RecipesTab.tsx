@@ -19,6 +19,8 @@ import { Button } from "@/components/Button";
 import { BodyText, SectionTitle } from "@/components/Typography";
 import { SIDEBAR, SPACING } from "@/styles/designTokens";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { HighlightedText } from "@/components/HighlightedText";
+import { capitalizeFirst } from "@/utils/text";
 import { RecipeViewModal } from "./RecipesTabComponents/RecipeViewModal";
 
 interface RecipesTabProps {
@@ -153,7 +155,8 @@ export function RecipesTab({ initialPage = 1 }: RecipesTabProps) {
           {data?.items.map((recipe) => (
             <ActionListItem
               key={recipe.id}
-              name={recipe.name}
+              name={capitalizeFirst(recipe.name)}
+              nameDisplay={<HighlightedText text={capitalizeFirst(recipe.name)} query={search} />}
               onView={() => handleRecipeView(recipe.id)}
               onEdit={() => handleRecipeEdit(recipe.id)}
               onDelete={() =>

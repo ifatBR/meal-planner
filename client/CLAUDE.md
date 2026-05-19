@@ -449,11 +449,11 @@ As new shared components are added (Card, Badge, Modal, BottomSheet, EmptyState,
 - If a UI element needs a handler that hasn't been implemented yet, still define it as a named function with a `// TODO` comment inside, and reference it by name on the component. Never leave the prop unwired and never use an inline arrow. Example:
 
   ```tsx
-  const handleRecipeClick = (id: string) => {
+  const handleView = () => {
     // TODO: navigate to recipe detail
   };
 
-  <ClickableListItem onClick={() => handleRecipeClick(recipe.id)} ... />
+  <ActionListItem name={recipe.name} onView={handleView} />
   ```
 
   This keeps the interface complete and makes gaps easy to find and fill in.
@@ -462,6 +462,7 @@ As new shared components are added (Card, Badge, Modal, BottomSheet, EmptyState,
 - No inline Zod schemas — import from `@app/types`.
 - No hardcoded strings for routes — use `ROUTES` constants from `src/utils/constants.ts`.
 - Search inputs are debounced 300ms — never fire on every keystroke.
+- Whenever a list is filtered by a search term, highlight the matching portion of each item's name using `<HighlightedText text={name} query={search} />` from `src/components/HighlightedText.tsx`. Pass it via the `nameDisplay` prop on `ActionListItem` (or equivalent). Never render search results without highlighting.
 - All list content in library tabs is constrained to `maxW="600px"`.
 - Mobile and desktop share the same interaction logic. Hover states are visual affordance only — the actual action is always click/tap.
 - Recipe ingredients use the two-step match flow: call `/ingredients/match` first, only call `/ingredients` to create if match returns null.
