@@ -214,10 +214,11 @@ On app load, attempt to refresh the token silently via `POST /auth/refresh`. If 
 
 ## Destructive Actions
 
-- All delete actions must show a `ConfirmDialog` before firing the DELETE request.
+- Delete actions for **MealType, DishType, Ingredient (including variants), Recipe, and Layout** must show a `ConfirmDialog` before firing the DELETE request.
 - Use `ConfirmDialog` from `src/components/ConfirmDialog.tsx`.
 - The DELETE request only fires after user confirms.
 - `isLoading` disables both buttons and shows spinner on the confirm button.
+- The dialog closes on mutation `onSuccess` or `onError` (call `setPendingDelete(null)` in both).
 - 409 errors after confirmation are shown as inline errors — never as toasts.
 
 ---
@@ -394,7 +395,7 @@ Use `<EditableListItem>` from `src/components/EditableListItem.tsx` for all name
 
 ### Confirm dialog
 
-Use `<ConfirmDialog>` from `src/components/ConfirmDialog.tsx` for all delete confirmations. Never fire a DELETE request without user confirmation.
+Use `<ConfirmDialog>` from `src/components/ConfirmDialog.tsx` for delete confirmations on MealType, DishType, Ingredient (including variants), Recipe, and Layout. Never fire a DELETE request for these entity types without user confirmation.
 
 ### Pagination
 

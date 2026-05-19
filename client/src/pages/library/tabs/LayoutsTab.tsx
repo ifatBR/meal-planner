@@ -2,16 +2,18 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Flex, Spinner } from "@chakra-ui/react";
 import { fetchLayouts, deleteLayout } from "@/api/layouts";
-import { ClickableListItem } from "@/components/ClickableListItem";
+import { ActionListItem } from "@/components/ActionListItem";
 import { EmptyState } from "@/components/EmptyState";
 import { useToast } from "@/hooks/useToast";
 import { LoadingError } from "@/components/LoadingError";
 import { SPACING } from "@/styles/designTokens";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 export function LayoutsTab() {
   const queryClient = useQueryClient();
   const toast = useToast();
   const [deleteErrors, setDeleteErrors] = useState<Record<string, string>>({});
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
 
   const {
     data: layouts,
@@ -23,7 +25,11 @@ export function LayoutsTab() {
     queryFn: fetchLayouts,
   });
 
-  const handleLayoutClick = (_: string) => {
+  const handleLayoutView = (_id: string) => {
+    // TODO: open layout read-only view
+  };
+
+  const handleLayoutEdit = (_id: string) => {
     // TODO: navigate to layout detail
   };
 
@@ -34,6 +40,7 @@ export function LayoutsTab() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteLayout(id),
     onSuccess: (_data, id) => {
+      setPendingDelete(null);
       setDeleteErrors((prev) => {
         const next = { ...prev };
         delete next[id];
@@ -42,6 +49,7 @@ export function LayoutsTab() {
       queryClient.invalidateQueries({ queryKey: ["layouts"] });
     },
     onError: (err: { statusCode?: number; message?: string }, id) => {
+      setPendingDelete(null);
       if (err?.statusCode === 409) {
         setDeleteErrors((prev) => ({
           ...prev,
@@ -89,14 +97,24 @@ export function LayoutsTab() {
   return (
     <Flex direction="column" gap={SPACING[1]} pt={SPACING[4]}>
       {layouts.map((layout) => (
-        <ClickableListItem
+        <ActionListItem
           key={layout.id}
           name={layout.name}
-          onClick={() => handleLayoutClick(layout.id)}
-          onDelete={() => deleteMutation.mutate(layout.id)}
+          onView={() => handleLayoutView(layout.id)}
+          onEdit={() => handleLayoutEdit(layout.id)}
+          onDelete={() => setPendingDelete({ id: layout.id, name: layout.name })}
           inlineError={deleteErrors[layout.id]}
         />
       ))}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title={`Delete "${pendingDelete?.name}"?`}
+        description="This action cannot be undone."
+        onClose={() => setPendingDelete(null)}
+        onConfirm={() => pendingDelete && deleteMutation.mutate(pendingDelete.id)}
+        isLoading={deleteMutation.isPending}
+      />
     </Flex>
   );
 }

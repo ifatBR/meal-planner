@@ -4,12 +4,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Box, Flex, Spinner } from "@chakra-ui/react";
 import { fetchRecipes, deleteRecipe } from "@/api/recipes";
 import { ROUTES } from "@/utils/constants";
-import { ClickableListItem } from "@/components/ClickableListItem";
+import { ActionListItem } from "@/components/ActionListItem";
 import { EmptyState } from "@/components/EmptyState";
 import { useToast } from "@/hooks/useToast";
 import { LoadingError } from "@/components/LoadingError";
 import { Pagination } from "@/components/Pagination";
 import { SIDEBAR, SPACING } from "@/styles/designTokens";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 interface RecipesTabProps {
   initialPage?: number;
@@ -21,13 +22,18 @@ export function RecipesTab({ initialPage = 1 }: RecipesTabProps) {
   const navigate = useNavigate();
   const [page, setPage] = useState(initialPage);
   const [deleteErrors, setDeleteErrors] = useState<Record<string, string>>({});
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["recipes", page],
     queryFn: () => fetchRecipes(page),
   });
 
-  const handleRecipeClick = (id: string) => {
+  const handleRecipeView = (_id: string) => {
+    // TODO: open recipe read-only view
+  };
+
+  const handleRecipeEdit = (id: string) => {
     navigate(ROUTES.RECIPE_DETAIL(id), { state: { fromPage: page } });
   };
 
@@ -38,6 +44,7 @@ export function RecipesTab({ initialPage = 1 }: RecipesTabProps) {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteRecipe(id),
     onSuccess: (_data, id) => {
+      setPendingDelete(null);
       setDeleteErrors((prev) => {
         const next = { ...prev };
         delete next[id];
@@ -46,6 +53,7 @@ export function RecipesTab({ initialPage = 1 }: RecipesTabProps) {
       queryClient.invalidateQueries({ queryKey: ["recipes"] });
     },
     onError: (err: { statusCode?: number; message?: string }, id) => {
+      setPendingDelete(null);
       if (err?.statusCode === 409) {
         setDeleteErrors((prev) => ({
           ...prev,
@@ -94,11 +102,12 @@ export function RecipesTab({ initialPage = 1 }: RecipesTabProps) {
     <Box pt={SPACING[4]} pb={SPACING[12]}>
       <Flex direction="column" gap={SPACING[1]}>
         {data.items.map((recipe) => (
-          <ClickableListItem
+          <ActionListItem
             key={recipe.id}
             name={recipe.name}
-            onClick={() => handleRecipeClick(recipe.id)}
-            onDelete={() => deleteMutation.mutate(recipe.id)}
+            onView={() => handleRecipeView(recipe.id)}
+            onEdit={() => handleRecipeEdit(recipe.id)}
+            onDelete={() => setPendingDelete({ id: recipe.id, name: recipe.name })}
             inlineError={deleteErrors[recipe.id]}
           />
         ))}
@@ -110,6 +119,15 @@ export function RecipesTab({ initialPage = 1 }: RecipesTabProps) {
       >
         <Pagination meta={data.meta} setPage={setPage} />
       </Box>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title={`Delete "${pendingDelete?.name}"?`}
+        description="This action cannot be undone."
+        onClose={() => setPendingDelete(null)}
+        onConfirm={() => pendingDelete && deleteMutation.mutate(pendingDelete.id)}
+        isLoading={deleteMutation.isPending}
+      />
     </Box>
   );
 }

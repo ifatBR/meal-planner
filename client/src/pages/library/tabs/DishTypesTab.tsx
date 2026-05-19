@@ -15,12 +15,14 @@ import { EmptyState } from "@/components/EmptyState";
 import { useToast } from "@/hooks/useToast";
 import { COLORS, SPACING } from "@/styles/designTokens";
 import { LoadingError } from "@/components/LoadingError";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 export function DishTypesTab() {
   const queryClient = useQueryClient();
   const toast = useToast();
   const [addingNew, setAddingNew] = useState(false);
   const [deleteErrors, setDeleteErrors] = useState<Record<string, string>>({});
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
 
   const {
     data: dishTypes,
@@ -71,6 +73,7 @@ export function DishTypesTab() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteDishType(id),
     onSuccess: (_data, id) => {
+      setPendingDelete(null);
       setDeleteErrors((prev) => {
         const next = { ...prev };
         delete next[id];
@@ -79,6 +82,7 @@ export function DishTypesTab() {
       queryClient.invalidateQueries({ queryKey: ["dish-types"] });
     },
     onError: (err: { statusCode?: number; message?: string }, id) => {
+      setPendingDelete(null);
       if (err?.statusCode === 409) {
         setDeleteErrors((prev) => ({
           ...prev,
@@ -139,7 +143,7 @@ export function DishTypesTab() {
           name={dt.name}
           color={COLORS.primary.default}
           onSave={(name) => handleSave(dt.id, name)}
-          onDelete={() => deleteMutation.mutate(dt.id)}
+          onDelete={() => setPendingDelete({ id: dt.id, name: dt.name })}
           inlineError={deleteErrors[dt.id]}
         />
       ))}
@@ -163,6 +167,15 @@ export function DishTypesTab() {
           </Button>
         </Box>
       )}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title={`Delete "${pendingDelete?.name}"?`}
+        description="This action cannot be undone."
+        onClose={() => setPendingDelete(null)}
+        onConfirm={() => pendingDelete && deleteMutation.mutate(pendingDelete.id)}
+        isLoading={deleteMutation.isPending}
+      />
     </Flex>
   );
 }

@@ -26,6 +26,11 @@ import { MAX_WIDTHS, SPACING } from "@/styles/designTokens";
 import { AccordionList } from "./IngredientsTabComponents/AccordionList";
 import { Pagination } from "@/components/Pagination";
 import { LoadingError } from "@/components/LoadingError";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+
+type PendingDelete =
+  | { kind: "ingredient"; id: string; name: string }
+  | { kind: "variant"; ingredientId: string; variantId: string; name: string };
 
 // ── Main component ──────────────────────────────────────────────────────────
 
@@ -51,6 +56,7 @@ export function IngredientsTab() {
   const [variantDeleteErrors, setVariantDeleteErrors] = useState<
     Record<string, string>
   >({});
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
 
   // Debounce search input
   useEffect(() => {
@@ -124,6 +130,7 @@ export function IngredientsTab() {
   const deleteIngredientMutation = useMutation({
     mutationFn: (id: string) => deleteIngredient(id),
     onSuccess: (_data, id) => {
+      setPendingDelete(null);
       setDeleteErrors((prev) => {
         const next = { ...prev };
         delete next[id];
@@ -132,6 +139,7 @@ export function IngredientsTab() {
       queryClient.invalidateQueries({ queryKey: ["ingredients"] });
     },
     onError: (err: { statusCode?: number; message?: string }, id) => {
+      setPendingDelete(null);
       if (err?.statusCode === 409) {
         setDeleteErrors((prev) => ({
           ...prev,
@@ -220,6 +228,7 @@ export function IngredientsTab() {
       variantId: string;
     }) => deleteVariant(ingredientId, variantId),
     onSuccess: (_data, { variantId }) => {
+      setPendingDelete(null);
       setVariantDeleteErrors((prev) => {
         const next = { ...prev };
         delete next[variantId];
@@ -231,6 +240,7 @@ export function IngredientsTab() {
       err: { statusCode?: number; message?: string },
       { variantId },
     ) => {
+      setPendingDelete(null);
       if (err?.statusCode === 409) {
         setVariantDeleteErrors((prev) => ({
           ...prev,
@@ -269,6 +279,18 @@ export function IngredientsTab() {
     setExpandedItems((prev) =>
       prev.includes(ingredientId) ? prev : [...prev, ingredientId],
     );
+  };
+
+  const handleConfirmDelete = () => {
+    if (!pendingDelete) return;
+    if (pendingDelete.kind === "ingredient") {
+      deleteIngredientMutation.mutate(pendingDelete.id);
+    } else {
+      deleteVariantMutation.mutate({
+        ingredientId: pendingDelete.ingredientId,
+        variantId: pendingDelete.variantId,
+      });
+    }
   };
 
   const handleCancelAddVariant = (ingredient: IngredientResponse) => {
@@ -366,9 +388,13 @@ export function IngredientsTab() {
         setHoveredIngredient={setHoveredIngredient}
         hoveredIngredient={hoveredIngredient}
         updateIngredientMutation={updateIngredientMutation}
-        deleteIngredientMutation={deleteIngredientMutation}
+        onRequestDeleteIngredient={(id, name) =>
+          setPendingDelete({ kind: "ingredient", id, name })
+        }
         updateVariantMutation={updateVariantMutation}
-        deleteVariantMutation={deleteVariantMutation}
+        onRequestDeleteVariant={(ingredientId, variantId, name) =>
+          setPendingDelete({ kind: "variant", ingredientId, variantId, name })
+        }
         addVariantMutation={addVariantMutation}
         search={search}
         handleAddVariantClick={handleAddVariantClick}
@@ -378,6 +404,19 @@ export function IngredientsTab() {
       />
 
       <Pagination meta={meta} setPage={setPage} />
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title={`Delete "${pendingDelete?.name}"?`}
+        description="This action cannot be undone."
+        onClose={() => setPendingDelete(null)}
+        onConfirm={handleConfirmDelete}
+        isLoading={
+          pendingDelete?.kind === "ingredient"
+            ? deleteIngredientMutation.isPending
+            : deleteVariantMutation.isPending
+        }
+      />
     </Box>
   );
 }

@@ -32,9 +32,9 @@ interface AccordionListProps {
   setHoveredIngredient: (id: string | null) => void;
   hoveredIngredient: string | null;
   updateIngredientMutation: { mutate: (input: { id: string; name: string }) => void };
-  deleteIngredientMutation: { mutate: (id: string) => void };
+  onRequestDeleteIngredient: (id: string, name: string) => void;
   updateVariantMutation: { mutate: (input: { ingredientId: string; variantId: string; variant: string }) => void };
-  deleteVariantMutation: { mutate: (input: { ingredientId: string; variantId: string }) => void };
+  onRequestDeleteVariant: (ingredientId: string, variantId: string, name: string) => void;
   addVariantMutation: { mutate: (input: { ingredientId: string; variant: string }) => void };
   search: string;
   handleAddVariantClick: (id: string) => void;
@@ -51,9 +51,9 @@ export function AccordionList({
   setHoveredIngredient,
   hoveredIngredient,
   updateIngredientMutation,
-  deleteIngredientMutation,
+  onRequestDeleteIngredient,
   updateVariantMutation,
-  deleteVariantMutation,
+  onRequestDeleteVariant,
   addVariantMutation,
   search,
   handleAddVariantClick,
@@ -168,7 +168,7 @@ export function AccordionList({
                       ? "Ingredient with variants can't be deleted"
                       : `Delete ${capitalizeFirst(ingredient.name)}`
                   }
-                  onClick={() => deleteIngredientMutation.mutate(ingredient.id)}
+                  onClick={() => onRequestDeleteIngredient(ingredient.id, ingredient.name)}
                   disabled={hasVariants}
                 >
                   <Trash2 size={ICON_SIZES.sm} />
@@ -212,10 +212,7 @@ export function AccordionList({
                         })
                       }
                       onDelete={() =>
-                        deleteVariantMutation.mutate({
-                          ingredientId: ingredient.id,
-                          variantId: v.id,
-                        })
+                        onRequestDeleteVariant(ingredient.id, v.id, v.variant)
                       }
                       inlineError={variantDeleteErrors[v.id]}
                     />

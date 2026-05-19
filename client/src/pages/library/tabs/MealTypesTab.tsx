@@ -16,12 +16,14 @@ import { useToast } from "@/hooks/useToast";
 import { MEAL_TYPE_COLORS } from "@/utils/constants";
 import { RADII, SPACING } from "@/styles/designTokens";
 import { LoadingError } from "@/components/LoadingError";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 export function MealTypesTab() {
   const queryClient = useQueryClient();
   const toast = useToast();
   const [addingNew, setAddingNew] = useState(false);
   const [deleteErrors, setDeleteErrors] = useState<Record<string, string>>({});
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
 
   const {
     data: mealTypes,
@@ -73,6 +75,7 @@ export function MealTypesTab() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteMealType(id),
     onSuccess: (_data, id) => {
+      setPendingDelete(null);
       setDeleteErrors((prev) => {
         const next = { ...prev };
         delete next[id];
@@ -81,6 +84,7 @@ export function MealTypesTab() {
       queryClient.invalidateQueries({ queryKey: ["meal-types"] });
     },
     onError: (err: { statusCode?: number; message?: string }, id) => {
+      setPendingDelete(null);
       if (err?.statusCode === 409) {
         setDeleteErrors((prev) => ({
           ...prev,
@@ -141,7 +145,7 @@ export function MealTypesTab() {
           name={mt.name}
           color={mt.color}
           onSave={(name) => handleSave(mt.id, name)}
-          onDelete={() => deleteMutation.mutate(mt.id)}
+          onDelete={() => setPendingDelete({ id: mt.id, name: mt.name })}
           inlineError={deleteErrors[mt.id]}
         />
       ))}
@@ -176,6 +180,15 @@ export function MealTypesTab() {
           </Button>
         </Box>
       )}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title={`Delete "${pendingDelete?.name}"?`}
+        description="This action cannot be undone."
+        onClose={() => setPendingDelete(null)}
+        onConfirm={() => pendingDelete && deleteMutation.mutate(pendingDelete.id)}
+        isLoading={deleteMutation.isPending}
+      />
     </Flex>
   );
 }

@@ -5,7 +5,7 @@ import { Star } from "lucide-react";
 import { fetchIngredients } from "@/api/ingredients";
 import { Button } from "@/components/Button";
 import { SearchInput } from "@/components/SearchInput";
-import { ClickableListItem } from "@/components/ClickableListItem";
+import { ActionListItem } from "@/components/ActionListItem";
 import { BodyText } from "@/components/Typography";
 import { HighlightedText } from "@/components/HighlightedText";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -13,7 +13,6 @@ import {
   COLORS,
   FONT_SIZES,
   ICON_SIZES,
-  MIN_HEIGHTS,
   RADII,
   SPACING,
 } from "@/styles/designTokens";
@@ -155,13 +154,13 @@ export function IngredientsField({
             )}
             {!searchLoading &&
               availableResults.map((ing) => (
-                <ClickableListItem
+                <ActionListItem
                   key={ing.id}
                   name={ing.name}
                   nameDisplay={
                     <HighlightedText text={ing.name} query={searchInput} />
                   }
-                  onClick={() => handleAddIngredient(ing)}
+                  onView={() => handleAddIngredient(ing)}
                 />
               ))}
           </Box>
