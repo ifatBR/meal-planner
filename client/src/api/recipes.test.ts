@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { fetchRecipes, fetchRecipeById, updateRecipe, deleteRecipe } from "./recipes";
+import { fetchRecipes, fetchRecipeById, updateRecipe, createRecipe, deleteRecipe } from "./recipes";
 import { setAccessTokenGetter } from "./apiClient";
 
 let fetchSpy: ReturnType<typeof vi.spyOn>;
@@ -117,6 +117,48 @@ describe("updateRecipe", () => {
       error: "recipe",
       message: "exists",
     });
+  });
+});
+
+describe("createRecipe", () => {
+  it("calls POST /api/v1/recipes with correct body and headers", async () => {
+    const created = { id: "r1", name: "pasta", mealTypes: [], dishTypes: [], ingredients: [] };
+    fetchSpy.mockResolvedValueOnce(okJson(created));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await createRecipe({ name: "pasta", mealTypeIds: ["mt1"], dishTypeIds: ["dt1"], ingredients: [{ id: "i1", isMain: true }] } as any);
+    const { url, options, headers } = getLastCall();
+    expect(url).toBe("/api/v1/recipes");
+    expect(options?.method).toBe("POST");
+    expect(headers["Content-Type"]).toBe("application/json");
+    expect(options?.body).toBe(
+      JSON.stringify({ name: "pasta", mealTypeIds: ["mt1"], dishTypeIds: ["dt1"], ingredients: [{ id: "i1", isMain: true }] })
+    );
+  });
+
+  it("includes Authorization bearer token", async () => {
+    fetchSpy.mockResolvedValueOnce(okJson({ id: "r1", name: "pasta" }));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await createRecipe({ name: "pasta", mealTypeIds: [], dishTypeIds: [], ingredients: [] } as any);
+    const { headers } = getLastCall();
+    expect(headers["Authorization"]).toBe("Bearer test-token");
+  });
+
+  it("returns the created recipe from response", async () => {
+    const created = { id: "r1", name: "pasta", mealTypes: [], dishTypes: [], ingredients: [] };
+    fetchSpy.mockResolvedValueOnce(okJson(created));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await createRecipe({ name: "pasta", mealTypeIds: [], dishTypeIds: [], ingredients: [] } as any);
+    expect(result).toEqual(created);
+  });
+
+  it("throws on non-ok response", async () => {
+    fetchSpy.mockResolvedValueOnce(
+      errorJson({ statusCode: 409, error: "recipe", message: "exists" }, 409)
+    );
+    await expect(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      createRecipe({ name: "pasta", mealTypeIds: [], dishTypeIds: [], ingredients: [] } as any)
+    ).rejects.toEqual({ statusCode: 409, error: "recipe", message: "exists" });
   });
 });
 

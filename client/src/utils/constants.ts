@@ -6,6 +6,7 @@ export const ROUTES = {
   SCHEDULES: "/schedules",
   SCHEDULE_SETTINGS: (id: string) => `/schedules/${id}/settings`,
   SCHEDULE_CALENDAR: (id: string) => `/schedules/${id}/calendar`,
+  RECIPE_NEW: "/recipes/new",
   RECIPE_DETAIL: (id: string) => `/recipes/${id}`,
   // For route definitions
   SCHEDULE_SETTINGS_PATTERN: "/schedules/:id/settings",

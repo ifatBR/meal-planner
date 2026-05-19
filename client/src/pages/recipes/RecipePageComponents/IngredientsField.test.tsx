@@ -71,10 +71,11 @@ describe("IngredientsField", () => {
     expect(screen.getByLabelText("Main ingredient")).toBeInTheDocument();
   });
 
-  it("renders 'Set as main' button for non-main ingredient", () => {
+  it("renders 'Set as main' button for non-main ingredient and hides it for main", () => {
     renderField([chicken, rice]);
     expect(screen.getByLabelText("Set Rice as main")).toBeInTheDocument();
-    expect(screen.queryByLabelText("Set Chicken as main")).not.toBeInTheDocument();
+    // Button is always in DOM but CSS-hidden for the main ingredient
+    expect(screen.getByLabelText("Set Chicken as main")).not.toBeVisible();
   });
 
   it("calls onChange with updated isMain when 'Set as main' is clicked", async () => {
@@ -96,12 +97,12 @@ describe("IngredientsField", () => {
     expect(onChange).toHaveBeenCalledWith([chicken]);
   });
 
-  it("auto-promotes first ingredient to main when main is removed", async () => {
+  it("removing a non-main ingredient preserves the main's isMain flag", async () => {
     const onChange = vi.fn();
     const user = userEvent.setup();
     renderField([chicken, rice], onChange);
-    await user.click(screen.getByLabelText("Remove Chicken"));
-    expect(onChange).toHaveBeenCalledWith([{ ...rice, isMain: true }]);
+    await user.click(screen.getByLabelText("Remove Rice"));
+    expect(onChange).toHaveBeenCalledWith([chicken]);
   });
 
   it("shows search panel when '+ Add ingredient' is clicked", async () => {
@@ -117,7 +118,6 @@ describe("IngredientsField", () => {
     mockFetch.mockResolvedValue(makePage(["Tomato", "Tofu"]));
     renderField([], onChange);
     await user.click(screen.getByRole("button", { name: "+ Add ingredient" }));
-    await user.type(screen.getByPlaceholderText("Search ingredients…"), "to");
     await waitFor(() =>
       expect(screen.getByText("Tomato")).toBeInTheDocument()
     );
@@ -133,7 +133,6 @@ describe("IngredientsField", () => {
     mockFetch.mockResolvedValue(makePage(["Tomato"]));
     renderField([], onChange);
     await user.click(screen.getByRole("button", { name: "+ Add ingredient" }));
-    await user.type(screen.getByPlaceholderText("Search ingredients…"), "t");
     await waitFor(() => expect(screen.getByText("Tomato")).toBeInTheDocument());
     await user.click(screen.getByText("Tomato"));
     const [call] = onChange.mock.calls;
@@ -146,7 +145,6 @@ describe("IngredientsField", () => {
     mockFetch.mockResolvedValue(makePage(["Tomato"]));
     renderField([chicken], onChange);
     await user.click(screen.getByRole("button", { name: "+ Add ingredient" }));
-    await user.type(screen.getByPlaceholderText("Search ingredients…"), "t");
     await waitFor(() => expect(screen.getByText("Tomato")).toBeInTheDocument());
     await user.click(screen.getByText("Tomato"));
     const [call] = onChange.mock.calls;

@@ -9,10 +9,12 @@ import { RecipePage } from "./RecipePage";
 import * as recipesApi from "@/api/recipes";
 import * as mealTypesApi from "@/api/mealTypes";
 import * as dishTypesApi from "@/api/dishTypes";
+import * as ingredientsApi from "@/api/ingredients";
 
 vi.mock("@/api/recipes", () => ({
   fetchRecipeById: vi.fn(),
   updateRecipe: vi.fn(),
+  createRecipe: vi.fn(),
 }));
 vi.mock("@/api/mealTypes", () => ({ fetchMealTypes: vi.fn() }));
 vi.mock("@/api/dishTypes", () => ({ fetchDishTypes: vi.fn() }));
@@ -54,6 +56,28 @@ const dishTypes = [
   { id: "dt1", name: "Main" },
   { id: "dt2", name: "Side" },
 ];
+
+function renderCreatePage() {
+  vi.mocked(mealTypesApi.fetchMealTypes).mockResolvedValue(mealTypes);
+  vi.mocked(dishTypesApi.fetchDishTypes).mockResolvedValue(dishTypes);
+
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+
+  return render(
+    <ChakraProvider value={system}>
+      <QueryClientProvider client={qc}>
+        <MemoryRouter initialEntries={["/recipes/new"]}>
+          <Routes>
+            <Route path="/recipes/new" element={<RecipePage />} />
+            <Route path="/library" element={<div>Library</div>} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    </ChakraProvider>
+  );
+}
 
 function renderPage() {
   vi.mocked(recipesApi.fetchRecipeById).mockResolvedValue(recipe);
@@ -228,11 +252,72 @@ describe("RecipePage", () => {
     expect((input as HTMLInputElement).value).toBe("pasta");
   });
 
-  it("navigates back when Back button is clicked", async () => {
+  it("navigates to Library when Discard is clicked", async () => {
     const user = userEvent.setup();
     renderPage();
     await screen.findByPlaceholderText("Recipe name");
-    await user.click(screen.getByRole("button", { name: /back/i }));
+    await user.click(screen.getByRole("button", { name: "Discard" }));
     expect(screen.getByText("Library")).toBeInTheDocument();
+  });
+});
+
+describe("RecipePage — create mode", () => {
+  it("renders an empty name field at /recipes/new", async () => {
+    renderCreatePage();
+    const input = await screen.findByPlaceholderText("Recipe name");
+    expect((input as HTMLInputElement).value).toBe("");
+  });
+
+  it("shows name validation error on save with empty name", async () => {
+    const user = userEvent.setup();
+    renderCreatePage();
+    await screen.findByPlaceholderText("Recipe name");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(await screen.findByText("Name is required.")).toBeInTheDocument();
+    expect(recipesApi.createRecipe).not.toHaveBeenCalled();
+  });
+
+  it("shows meal type validation error when no meal type selected", async () => {
+    const user = userEvent.setup();
+    renderCreatePage();
+    const input = await screen.findByPlaceholderText("Recipe name");
+    await user.type(input, "New Recipe");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(await screen.findByText("At least one meal type is required.")).toBeInTheDocument();
+    expect(recipesApi.createRecipe).not.toHaveBeenCalled();
+  });
+
+  it("calls createRecipe and shows 'Recipe created.' toast on valid submission", async () => {
+    const user = userEvent.setup();
+    vi.mocked(recipesApi.createRecipe).mockResolvedValue({ ...recipe, id: "r-new" });
+    vi.mocked(ingredientsApi.fetchIngredients).mockResolvedValueOnce({
+      items: [{ id: "i99", name: "Pasta", ingredient_variants: [], category: null, workspace_id: "w1", created_at: new Date(), updated_at: new Date() }],
+      meta: { page: 1, totalPages: 1 },
+    });
+    renderCreatePage();
+
+    const input = await screen.findByPlaceholderText("Recipe name");
+    await user.type(input, "New Recipe");
+
+    // Add meal type
+    await user.click(screen.getAllByRole("button", { name: "+ Add" })[0]);
+    await user.click(screen.getByText("Dinner"));
+
+    // Add dish type
+    await user.click(screen.getAllByRole("button", { name: "+ Add" })[1]);
+    await user.click(screen.getByText("Main"));
+
+    // Add ingredient
+    await user.click(screen.getByRole("button", { name: "+ Add ingredient" }));
+    await waitFor(() => expect(screen.getByText("Pasta")).toBeInTheDocument());
+    await user.click(screen.getByText("Pasta"));
+
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(recipesApi.createRecipe).toHaveBeenCalledWith(
+        expect.objectContaining({ name: "New Recipe" })
+      )
+    );
+    await waitFor(() => expect(mockToastSuccess).toHaveBeenCalledWith("Recipe created."));
   });
 });

@@ -30,6 +30,7 @@ export const routeConfig = [
     children: [
       { index: true, element: <Navigate to={ROUTES.SCHEDULES} replace /> },
       { path: ROUTES.LIBRARY, element: <LibraryPage /> },
+      { path: ROUTES.RECIPE_NEW, element: <RecipePage /> },
       { path: ROUTES.RECIPE_DETAIL_PATTERN, element: <RecipePage /> },
       { path: ROUTES.SCHEDULES, element: <Placeholder name="Schedules" /> },
       {

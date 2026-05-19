@@ -63,8 +63,8 @@ export function RecipesTab({ initialPage = 1 }: RecipesTabProps) {
     navigate(ROUTES.RECIPE_DETAIL(id), { state: { fromPage: page } });
   };
 
-  const handleAddRecipe = () => {
-    // TODO: navigate to recipe creation
+  const handleCreateRecipe = () => {
+    navigate(ROUTES.RECIPE_NEW, { state: { fromPage: page } });
   };
 
   const deleteMutation = useMutation({
@@ -118,7 +118,7 @@ export function RecipesTab({ initialPage = 1 }: RecipesTabProps) {
       <EmptyState
         title="No recipes yet."
         description="Recipes are the dishes that fill your meal schedule. Add your first recipe to get started."
-        action={{ label: "Add your first recipe", onClick: handleAddRecipe }}
+        action={{ label: "Add your first recipe", onClick: handleCreateRecipe }}
       />
     );
   }
@@ -133,7 +133,7 @@ export function RecipesTab({ initialPage = 1 }: RecipesTabProps) {
         mb={SPACING[4]}
       >
         <SectionTitle>Recipes</SectionTitle>
-        <Button variant="primary" size="sm" onClick={handleAddRecipe}>
+        <Button variant="primary" size="sm" onClick={handleCreateRecipe}>
           + Create recipe
         </Button>
       </Flex>
@@ -156,7 +156,12 @@ export function RecipesTab({ initialPage = 1 }: RecipesTabProps) {
             <ActionListItem
               key={recipe.id}
               name={capitalizeFirst(recipe.name)}
-              nameDisplay={<HighlightedText text={capitalizeFirst(recipe.name)} query={search} />}
+              nameDisplay={
+                <HighlightedText
+                  text={capitalizeFirst(recipe.name)}
+                  query={search}
+                />
+              }
               onView={() => handleRecipeView(recipe.id)}
               onEdit={() => handleRecipeEdit(recipe.id)}
               onDelete={() =>

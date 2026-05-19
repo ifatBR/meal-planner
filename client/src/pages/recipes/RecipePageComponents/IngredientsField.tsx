@@ -5,7 +5,6 @@ import { Star } from "lucide-react";
 import { fetchIngredients } from "@/api/ingredients";
 import { Button } from "@/components/Button";
 import { SearchInput } from "@/components/SearchInput";
-import { ActionListItem } from "@/components/ActionListItem";
 import { BodyText } from "@/components/Typography";
 import { HighlightedText } from "@/components/HighlightedText";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -17,6 +16,7 @@ import {
   SPACING,
 } from "@/styles/designTokens";
 import { capitalizeFirst } from "@/utils/text";
+import { ClickableListItem } from "@/components/ClickableListItem";
 
 export interface FormIngredient {
   id: string;
@@ -154,13 +154,13 @@ export function IngredientsField({
             )}
             {!searchLoading &&
               availableResults.map((ing) => (
-                <ActionListItem
+                <ClickableListItem
                   key={ing.id}
                   name={ing.name}
                   nameDisplay={
                     <HighlightedText text={ing.name} query={searchInput} />
                   }
-                  onView={() => handleAddIngredient(ing)}
+                  onClick={() => handleAddIngredient(ing)}
                 />
               ))}
           </Box>

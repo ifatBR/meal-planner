@@ -1,4 +1,4 @@
-import type { RecipeResponse, UpdateRecipeBody } from '@app/types';
+import type { RecipeResponse, UpdateRecipeBody, CreateRecipeBody } from '@app/types';
 import { API_BASE } from '../utils/constants';
 import { apiFetch } from './apiClient';
 
@@ -28,6 +28,17 @@ export const fetchRecipeById = async (id: string): Promise<RecipeResponse> => {
 export const updateRecipe = async (id: string, body: UpdateRecipeBody): Promise<RecipeResponse> => {
   const res = await apiFetch(`${RECIPES_URL}/${id}`, {
     method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw await res.json();
+  const { data } = await res.json();
+  return data;
+};
+
+export const createRecipe = async (body: CreateRecipeBody): Promise<RecipeResponse> => {
+  const res = await apiFetch(RECIPES_URL, {
+    method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });

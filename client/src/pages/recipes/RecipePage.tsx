@@ -2,13 +2,12 @@ import { useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Box, Flex, Spinner, Textarea } from "@chakra-ui/react";
-import { ChevronLeft } from "lucide-react";
 import type {
   RecipeResponse,
   MealTypeResponse,
   DishTypeResponse,
 } from "@app/types";
-import { fetchRecipeById, updateRecipe } from "@/api/recipes";
+import { fetchRecipeById, updateRecipe, createRecipe } from "@/api/recipes";
 import { fetchMealTypes } from "@/api/mealTypes";
 import { fetchDishTypes } from "@/api/dishTypes";
 import { Button } from "@/components/Button";
@@ -35,6 +34,7 @@ import {
 
 export function RecipePage() {
   const { id } = useParams<{ id: string }>();
+  const isCreate = !id;
   const navigate = useNavigate();
   const location = useLocation();
   const fromPage =
@@ -57,11 +57,13 @@ export function RecipePage() {
   });
 
   const isLoading =
-    recipeQuery.isLoading ||
+    (!isCreate && recipeQuery.isLoading) ||
     mealTypesQuery.isLoading ||
     dishTypesQuery.isLoading;
   const isError =
-    recipeQuery.isError || mealTypesQuery.isError || dishTypesQuery.isError;
+    (!isCreate && recipeQuery.isError) ||
+    mealTypesQuery.isError ||
+    dishTypesQuery.isError;
 
   const refetchAll = () => {
     recipeQuery.refetch();
@@ -79,7 +81,7 @@ export function RecipePage() {
 
   if (
     isError ||
-    !recipeQuery.data ||
+    (!isCreate && !recipeQuery.data) ||
     !mealTypesQuery.data ||
     !dishTypesQuery.data
   ) {
@@ -90,7 +92,7 @@ export function RecipePage() {
 
   return (
     <RecipeForm
-      recipe={recipeQuery.data}
+      recipe={recipeQuery.data ?? null}
       allMealTypes={mealTypesQuery.data}
       allDishTypes={dishTypesQuery.data}
       onBack={() =>
@@ -105,7 +107,7 @@ export function RecipePage() {
 // ── Form ────────────────────────────────────────────────────────────────────
 
 interface RecipeFormProps {
-  recipe: RecipeResponse;
+  recipe: RecipeResponse | null;
   allMealTypes: MealTypeResponse[];
   allDishTypes: DishTypeResponse[];
   onBack: () => void;
@@ -122,23 +124,30 @@ function RecipeForm({
 
   // Form state
   const mealTypeColorMap = new Map(allMealTypes.map((m) => [m.id, m.color]));
-  const [formName, setFormName] = useState(recipe.name);
+  const [formName, setFormName] = useState(recipe?.name ?? "");
   const [formMealTypes, setFormMealTypes] = useState<TagItem[]>(
-    recipe.mealTypes.map((m) => ({ ...m, color: mealTypeColorMap.get(m.id) })),
+    recipe
+      ? recipe.mealTypes.map((m) => ({
+          ...m,
+          color: mealTypeColorMap.get(m.id),
+        }))
+      : [],
   );
   const [formDishTypes, setFormDishTypes] = useState<TagItem[]>(
-    recipe.dishTypes,
+    recipe?.dishTypes ?? [],
   );
   const [formIngredients, setFormIngredients] = useState<FormIngredient[]>(
-    recipe.ingredients.map((ri) => ({
-      id: ri.id,
-      displayName: ri.displayName,
-      isMain: ri.isMain,
-      measure: ri.measure,
-    })),
+    recipe
+      ? recipe.ingredients.map((ri) => ({
+          id: ri.id,
+          displayName: ri.displayName,
+          isMain: ri.isMain,
+          measure: ri.measure,
+        }))
+      : [],
   );
   const [formInstructions, setFormInstructions] = useState(
-    recipe.instructions ?? "",
+    recipe?.instructions ?? "",
   );
 
   // Field errors
@@ -150,18 +159,20 @@ function RecipeForm({
   const [dishTypesConflict, setDishTypesConflict] = useState("");
 
   const resetForm = () => {
-    setFormName(recipe.name);
-    setFormMealTypes(recipe.mealTypes);
-    setFormDishTypes(recipe.dishTypes);
+    setFormName(recipe?.name ?? "");
+    setFormMealTypes(recipe?.mealTypes ?? []);
+    setFormDishTypes(recipe?.dishTypes ?? []);
     setFormIngredients(
-      recipe.ingredients.map((ri) => ({
-        id: ri.id,
-        displayName: ri.displayName,
-        isMain: ri.isMain,
-        measure: ri.measure,
-      })),
+      recipe
+        ? recipe.ingredients.map((ri) => ({
+            id: ri.id,
+            displayName: ri.displayName,
+            isMain: ri.isMain,
+            measure: ri.measure,
+          }))
+        : [],
     );
-    setFormInstructions(recipe.instructions ?? "");
+    setFormInstructions(recipe?.instructions ?? "");
     setNameError("");
     setMealTypesError("");
     setDishTypesError("");
@@ -207,19 +218,23 @@ function RecipeForm({
     return valid;
   };
 
-  const buildPatch = () => {
+  const buildIngredients = () =>
+    formIngredients.map((i) => ({
+      id: i.id,
+      isMain: i.isMain,
+      ...(i.measure ? { measure: i.measure } : {}),
+    }));
+
+  const buildPatch = (existing: RecipeResponse) => {
     const patch: Record<string, unknown> = {};
 
-    if (formName.trim() !== recipe.name) {
-      patch.name = formName.trim();
-    }
+    if (formName.trim() !== existing.name) patch.name = formName.trim();
 
-    const origInstructions = recipe.instructions ?? "";
-    if (formInstructions !== origInstructions) {
+    const origInstructions = existing.instructions ?? "";
+    if (formInstructions !== origInstructions)
       patch.instructions = formInstructions || null;
-    }
 
-    const origMealIds = recipe.mealTypes
+    const origMealIds = existing.mealTypes
       .map((m) => m.id)
       .sort()
       .join(",");
@@ -227,11 +242,10 @@ function RecipeForm({
       .map((m) => m.id)
       .sort()
       .join(",");
-    if (origMealIds !== formMealIds) {
+    if (origMealIds !== formMealIds)
       patch.mealTypeIds = formMealTypes.map((m) => m.id);
-    }
 
-    const origDishIds = recipe.dishTypes
+    const origDishIds = existing.dishTypes
       .map((d) => d.id)
       .sort()
       .join(",");
@@ -239,12 +253,11 @@ function RecipeForm({
       .map((d) => d.id)
       .sort()
       .join(",");
-    if (origDishIds !== formDishIds) {
+    if (origDishIds !== formDishIds)
       patch.dishTypeIds = formDishTypes.map((d) => d.id);
-    }
 
     const origIngStr = JSON.stringify(
-      recipe.ingredients
+      existing.ingredients
         .map((i) => ({ id: i.id, isMain: i.isMain }))
         .sort((a, b) => a.id.localeCompare(b.id)),
     );
@@ -253,25 +266,23 @@ function RecipeForm({
         .map((i) => ({ id: i.id, isMain: i.isMain }))
         .sort((a, b) => a.id.localeCompare(b.id)),
     );
-    if (origIngStr !== formIngStr) {
-      patch.ingredients = formIngredients.map((i) => ({
-        id: i.id,
-        isMain: i.isMain,
-        ...(i.measure ? { measure: i.measure } : {}),
-      }));
-    }
+    if (origIngStr !== formIngStr) patch.ingredients = buildIngredients();
 
     return Object.keys(patch).length > 0 ? patch : null;
   };
 
   const saveMutation = useMutation({
-    mutationFn: (patch: Record<string, unknown>) =>
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      updateRecipe(recipe.id, patch as any),
-    onSuccess: () => {
+    mutationFn: (body: Record<string, unknown>) =>
+      recipe
+        ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          updateRecipe(recipe.id, body as any)
+        : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          createRecipe(body as any),
+    onSuccess: (saved) => {
       queryClient.invalidateQueries({ queryKey: ["recipes"] });
-      queryClient.invalidateQueries({ queryKey: ["recipe", recipe.id] });
-      toast.success("Recipe saved.");
+      if (recipe)
+        queryClient.invalidateQueries({ queryKey: ["recipe", saved.id] });
+      toast.success(recipe ? "Recipe saved." : "Recipe created.");
       onBack();
     },
     onError: (err: {
@@ -300,12 +311,22 @@ function RecipeForm({
 
   const handleSave = () => {
     if (!validate()) return;
-    const patch = buildPatch();
-    if (!patch) {
-      onBack();
-      return;
+    if (recipe) {
+      const patch = buildPatch(recipe);
+      if (!patch) {
+        onBack();
+        return;
+      }
+      saveMutation.mutate(patch);
+    } else {
+      saveMutation.mutate({
+        name: formName.trim(),
+        mealTypeIds: formMealTypes.map((m) => m.id),
+        dishTypeIds: formDishTypes.map((d) => d.id),
+        ingredients: buildIngredients(),
+        ...(formInstructions.trim() ? { instructions: formInstructions } : {}),
+      });
     }
-    saveMutation.mutate(patch);
   };
 
   const handleDiscard = () => {
